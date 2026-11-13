@@ -1,4 +1,15 @@
 RewriteEngine On
+# add the trailing slash externally so the internal /app/ or /console/ prefix never leaks
+RewriteCond %{HTTP_HOST} ^console. [NC]
+RewriteCond %{REQUEST_URI} !/$
+RewriteCond %{REQUEST_URI} !^/console/
+RewriteCond %{DOCUMENT_ROOT}/console%{REQUEST_URI} -d
+RewriteRule ^(.*)$ /$1/ [R=301,L]
+RewriteCond %{HTTP_HOST} !^console. [NC]
+RewriteCond %{REQUEST_URI} !/$
+RewriteCond %{REQUEST_URI} !^/app/
+RewriteCond %{DOCUMENT_ROOT}/app%{REQUEST_URI} -d
+RewriteRule ^(.*)$ /$1/ [R=301,L]
 # console.pay-r.us -> /console/ (SPA fallback to index.html)
 RewriteCond %{HTTP_HOST} ^console. [NC]
 RewriteCond %{REQUEST_URI} !^/console/
