@@ -33,7 +33,7 @@ const isNetErr=e=>e&&(e.name==='AbortError'||e instanceof TypeError);
 
 /* api(method,url,body,{role,user,label,offline}) — renvoie le JSON ; pour une écriture mise en file : {queued:true,opId} */
 async function api(method,url,body,o={}){
-  const hdr={};if(o.role)hdr['x-role']=o.role;if(o.user)hdr['x-user']=o.user;if(o.uid)hdr['x-uid']=o.uid;
+  const hdr={};try{const tk=localStorage.getItem('ep_token');if(tk)hdr.authorization='Bearer '+tk}catch{}if(o.role)hdr['x-role']=o.role;if(o.user)hdr['x-user']=o.user;if(o.uid)hdr['x-uid']=o.uid;
   const ckey=method+' '+url+'|'+(o.role||'')+'|'+(o.user||'')+'|'+(o.uid||'');
   if(method==='GET'){
     try{const r=await net('GET',url,null,hdr);S.online=true;

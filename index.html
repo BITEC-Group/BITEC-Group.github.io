@@ -852,12 +852,24 @@ function vRoles(v){
   '<div class="card"><h3>Comptes de démonstration</h3><div class="scroll" style="max-height:340px"><table><tr><th>Nom</th><th>Profil</th><th>Province</th></tr>'+PERSONAS.map(p=>'<tr><td>'+esc(p.nom)+'<br><small>'+esc(p.titre)+'</small></td><td>'+esc(ROLE_LABELS[p.role]||p.role)+'</td><td>'+esc(p.province||'')+'</td></tr>').join('')+'</table></div><div class="note">Comptes fictifs : numéros et e-mails factices. En production : annuaire / SSO et authentification forte.</div></div></div>';
 }
 /* ====================== Démarrage ====================== */
+/* Connexion : sur un serveur verrouillé (ALLOW_DEMO_HEADERS=0), le profil vient d'un jeton (POST /api/auth/login) et non du sélecteur de démonstration */
+const SES={get tok(){try{return localStorage.getItem('ep_token')}catch{return null}},get user(){try{return JSON.parse(localStorage.getItem('ep_user')||'null')}catch{return null}},
+  set(t,u){try{localStorage.setItem('ep_token',t);localStorage.setItem('ep_user',JSON.stringify(u))}catch{}},clear(){try{localStorage.removeItem('ep_token');localStorage.removeItem('ep_user')}catch{}}};
+function applySession(){const u=SES.tok&&SES.user;if(!u)return;PID=u.id;ROLE=u.role;if(ROLE==='med')DOCID=u.ref;if(ROLE==='pharma')DB.pharmaOff=u.ref}
+function showLogin(msg){
+  $('#view').innerHTML='<div class="card" style="max-width:380px;margin:40px auto"><h3>Connexion à E-Pharma</h3><div class="sub">Ce serveur exige une authentification.</div>'+(msg?'<div class="err" style="margin:8px 0">'+esc(msg)+'</div>':'')+
+   '<label>Identifiant ou e-mail</label><input id="lg_u" autocomplete="username" autofocus><label>Mot de passe</label><input id="lg_p" type="password" autocomplete="current-password"><p><button id="lg_go">Se connecter</button></p></div>';
+  const go1=async()=>{const b=$('#lg_go');b.disabled=true;
+    try{const r=await EP.api('POST','/api/auth/login',{login:$('#lg_u').value,password:$('#lg_p').value},{online:true});SES.set(r.token,r.user);location.reload()}
+    catch(e){showLogin(e.message)}};
+  $('#lg_go').onclick=go1;$('#lg_p').onkeydown=e=>{if(e.key==='Enter')go1()}}
+function logoutBtn(){if(!SES.tok||$('#lg_out'))return;const s=$('#role');if(!s)return;const a=document.createElement('a');a.id='lg_out';a.href='#';a.textContent='Déconnexion';a.style.cssText='margin-left:8px;font-size:12px';a.onclick=e=>{e.preventDefault();SES.clear();location.reload()};s.after(a)}
 buildRole();
 const h0=location.hash.slice(1);if(MODS[h0])CUR=h0;
 (async()=>{
   $('#view').innerHTML='<div class="sub">Connexion au serveur…</div>';
-  try{PROV_GEO=await (await fetch('/prov.json')).json();try{PERSONAS=await EP.api('GET','/api/users/demo',null,{})}catch{};buildRole();await refresh();NAV.stack=[CUR];NAV.i=0;go()}
-  catch(e){$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable : '+esc(e.message)+'. Lancez <code>node server.js</code> puis rechargez.</div>'}
+  try{PROV_GEO=await (await fetch('/prov.json')).json();try{PERSONAS=await EP.api('GET','/api/users/demo',null,{})}catch{};applySession();buildRole();await refresh();logoutBtn();NAV.stack=[CUR];NAV.i=0;go()}
+  catch(e){if(e.http===401){const had=!!SES.tok;SES.clear();return showLogin(had?'Session expirée : reconnectez-vous.':'')}$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable : '+esc(e.message)+'. Lancez <code>node server.js</code> puis rechargez.</div>'}
 })();
 var _u=document.createElement('script');_u.src='/update.js';document.head.appendChild(_u);
 window.addEventListener('ep-synced',()=>refresh().then(()=>go()).catch(()=>{}));
