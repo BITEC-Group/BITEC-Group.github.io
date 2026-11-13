@@ -127,7 +127,7 @@ a.tile .ico{font-size:30px}a.tile small{color:var(--mute)}
   </div>
   <div class="sp"></div>
   <span id="scopePill" style="display:none"></span><button id="bell" title="Messagerie : alertes de votre secteur" style="display:none">🔔<b id="bellN">0</b></button>
-  <select id="role" title="Profil utilisateur (démonstration)"></select>
+  <select id="role" title="Profil utilisateur (démonstration)"></select><button id="authBtn" class="navb" style="margin-left:8px;white-space:nowrap"></button>
 </header>
 <div class="layout">
   <nav id="nav"></nav>
@@ -226,7 +226,7 @@ async function api(m,u,b){
     const id=(String(b.payload).match(/RX-\d{4}-\d{6}/)||[])[0],r=DB.rx.find(x=>x.id===id);if(!r)throw Object.assign(new Error('Hors ligne : ordonnance inconnue de cet appareil'),{offline:true});
     const p=String(b.payload).split('|');if(p.length>3&&p[3]!==r.sig)throw new Error('Signature invalide : ordonnance altérée ou falsifiée');return r}}
   if(/\/send$|\/paylink$/.test(u))o.noQueue=true;
-  const r=await EP.api(m,u,b,o);return r}
+  try{return await EP.api(m,u,b,o)}catch(e){if(e.http===401&&SES.tok){SES.clear();authBtn();showLogin('Session expirée : reconnectez-vous.')}throw e}}
 function updPills(){
   const sp=$('#scopePill');if(sp){sp.style.display=ROLE==='insp'||ROLE==='manager'||ROLE==='dp'?'':'none';sp.textContent='Périmètre : '+(SCOPE||'national')}
   const bl=$('#bell');if(bl)bl.style.display=ROLES[ROLE].m.includes('messages')?'':'none'}
@@ -863,13 +863,15 @@ function showLogin(msg){
     try{const r=await EP.api('POST','/api/auth/login',{login:$('#lg_u').value,password:$('#lg_p').value},{online:true});SES.set(r.token,r.user);location.reload()}
     catch(e){showLogin(e.message)}};
   $('#lg_go').onclick=go1;$('#lg_p').onkeydown=e=>{if(e.key==='Enter')go1()}}
-function logoutBtn(){if(!SES.tok||$('#lg_out'))return;const s=$('#role');if(!s)return;const a=document.createElement('a');a.id='lg_out';a.href='#';a.textContent='Déconnexion';a.style.cssText='margin-left:8px;font-size:12px';a.onclick=e=>{e.preventDefault();SES.clear();location.reload()};s.after(a)}
+function authBtn(){const b=$('#authBtn'),s=$('#role');if(!b)return;const u=SES.tok&&SES.user;
+  if(u){b.textContent='⎋ Déconnexion';b.title='Connecté : '+u.nom+' ('+(u.roleLabel||u.role)+')';b.onclick=()=>{SES.clear();location.reload()};if(s)s.style.display='none'}   // le jeton fixe le profil : le sélecteur de démonstration est masqué
+  else{b.textContent='🔑 Connexion';b.title='Se connecter avec un compte';b.onclick=()=>showLogin();if(s)s.style.display=''}}
 buildRole();
 const h0=location.hash.slice(1);if(MODS[h0])CUR=h0;
 (async()=>{
-  $('#view').innerHTML='<div class="sub">Connexion au serveur…</div>';
-  try{PROV_GEO=await (await fetch('/prov.json')).json();try{PERSONAS=await EP.api('GET','/api/users/demo',null,{})}catch{};applySession();buildRole();await refresh();logoutBtn();NAV.stack=[CUR];NAV.i=0;go()}
-  catch(e){if(e.http===401){const had=!!SES.tok;SES.clear();return showLogin(had?'Session expirée : reconnectez-vous.':'')}$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable : '+esc(e.message)+'. Lancez <code>node server.js</code> puis rechargez.</div>'}
+  authBtn();$('#view').innerHTML='<div class="sub">Connexion au serveur…</div>';
+  try{PROV_GEO=await (await fetch('/prov.json')).json();try{PERSONAS=await EP.api('GET','/api/users/demo',null,{})}catch{};applySession();buildRole();authBtn();await refresh();NAV.stack=[CUR];NAV.i=0;go()}
+  catch(e){if(e.http===401){const had=!!SES.tok;SES.clear();authBtn();return showLogin(had?'Session expirée : reconnectez-vous.':'')}$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable : '+esc(e.message)+'. Lancez <code>node server.js</code> puis rechargez.</div>'}
 })();
 var _u=document.createElement('script');_u.src='/update.js';document.head.appendChild(_u);
 window.addEventListener('ep-synced',()=>refresh().then(()=>go()).catch(()=>{}));
