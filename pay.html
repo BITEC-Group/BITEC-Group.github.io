@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-Pharma — Paiement</title>
+<style>
+:root{--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--green:#0E6B38;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.flag{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+header{background:var(--green);color:#fff;padding:12px 16px;font-weight:700;font-size:18px}
+.demo{background:#FFF3C4;color:#5A4500;font-size:12px;text-align:center;padding:4px 8px}
+main{max-width:480px;margin:auto;padding:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.amt{font-size:34px;font-weight:800;margin:4px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:5px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:right}
+.mode{display:flex;gap:10px;align-items:center;border:2px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;cursor:pointer}
+.mode input{width:20px;height:20px}.mode.on{border-color:var(--green);background:#EAF6EE}
+button{width:100%;font:inherit;font-weight:700;padding:14px;border-radius:12px;border:0;background:var(--green);color:#fff;margin-top:6px}
+button:disabled{opacity:.5}.err{background:#FDE6E8;border:1px solid #F0A5AC;color:#7D0913;border-radius:10px;padding:10px;margin:10px 0}
+.paid{background:#DDF3E5;border:2px solid #0A6B33;color:#0A5A2B;border-radius:14px;padding:18px;text-align:center}
+.note{font-size:12px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="flag"></div><header>E-Pharma · Paiement d’un procès-verbal</header>
+<div class="demo">Démonstration : le paiement est simulé, aucun débit réel n’est effectué.</div>
+<main id="m"><div class="card">Chargement…</div></main>
+<script src="/config.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const P=new URLSearchParams(location.search),PV=P.get('pv'),K=P.get('k');
+const usd=n=>new Intl.NumberFormat('fr-FR').format(n)+' $';
+let MODE='Mobile money';
+async function load(){
+  try{const r=await fetch((window.API_BASE||'')+'/api/pay/'+encodeURIComponent(PV)+'?k='+encodeURIComponent(K));const d=await r.json();if(!r.ok)throw new Error(d.error||'Erreur');
+    if(d.paid){$('#m').innerHTML=`<div class="paid"><div style="font-size:40px">✅</div><h2 style="margin:6px 0">Paiement reçu</h2><div>${usd(d.total)} · ${esc(d.mode)}</div><div>Reçu n° <b>${esc(d.rcp)}</b></div><div class="note" style="margin-top:8px">Procès-verbal ${esc(d.id)} — ${esc(d.off)}</div></div>`;return}
+    $('#m').innerHTML=`<div class="card"><div class="note">Procès-verbal ${esc(d.id)} du ${esc(d.date)}</div><div><b>${esc(d.off)}</b> · ${esc(d.prov)}</div><div class="amt">${usd(d.total)}</div>
+      <table>${d.items.map(i=>`<tr><td>${esc(i.label)}</td><td>${usd(i.amount)}</td></tr>`).join('')}</table></div>
+      <div class="card"><b>Choisissez le mode de paiement</b>
+      ${['Mobile money','Carte bancaire','Virement'].map((m,i)=>`<label class="mode ${i?'':'on'}"><input type="radio" name="md" value="${m}" ${i?'':'checked'}> ${m}</label>`).join('')}
+      <button id="go">Payer ${usd(d.total)}</button><div id="msg"></div><div class="note" style="margin-top:8px">En démonstration, le paiement est confirmé immédiatement. En production, la confirmation provient du prestataire de paiement.</div></div>`;
+    document.querySelectorAll('input[name=md]').forEach(r=>r.onchange=()=>{MODE=r.value;document.querySelectorAll('.mode').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked))});
+    $('#go').onclick=async()=>{$('#go').disabled=true;
+      try{const r=await fetch((window.API_BASE||'')+'/api/pay/'+encodeURIComponent(PV)+'/confirm?k='+encodeURIComponent(K),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:MODE})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Erreur');load()}
+      catch(e){$('#msg').innerHTML='<div class="err">'+esc(e.message)+'</div>';$('#go').disabled=false}}
+  }catch(e){$('#m').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+load();
+</script>
+</body>
+</html>

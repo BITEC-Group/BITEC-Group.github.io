@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0E6B38">
+<title>Titre réglementaire — E-Pharma</title>
+<link rel="stylesheet" href="/secure-doc.css">
+<style>
+:root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--ink:#14231B;--mute:#5B6B62;--line:#D9E2DC;--gold:#B8941F}
+*{box-sizing:border-box}
+html,body{margin:0;background:#E9EEEB;color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bar b{margin-right:auto}
+.bar button,.bar a{font:inherit;background:var(--green);color:#fff;border:0;border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none}
+.bar a.alt{background:#fff;color:var(--green);border:1px solid var(--green)}
+#stage{padding:14px;display:flex;justify-content:center}
+#wrap{position:relative;overflow:hidden;max-width:100%}
+.sheet{width:297mm;height:210mm;background:#fff;position:relative;overflow:hidden;transform-origin:top left;box-shadow:0 4px 18px rgba(0,0,0,.18);font-family:Georgia,"Times New Roman",serif}
+/* cadre : double filet vert + or, bandeau tricolore */
+.frame{position:absolute;inset:6mm;border:1.6mm solid var(--green);outline:.5mm solid var(--gold);outline-offset:-3.2mm}
+.flag{position:absolute;left:6mm;right:6mm;top:6mm;height:3.2mm;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%);z-index:2}
+.flag.b{top:auto;bottom:6mm}
+.corner{position:absolute;width:12mm;height:12mm;border:.6mm solid var(--gold);z-index:2}
+.c1{left:10mm;top:13mm;border-right:0;border-bottom:0}.c2{right:10mm;top:13mm;border-left:0;border-bottom:0}
+.c3{left:10mm;bottom:13mm;border-right:0;border-top:0}.c4{right:10mm;bottom:13mm;border-left:0;border-top:0}
+.inner{position:absolute;inset:13mm 16mm 12mm;display:flex;flex-direction:column}
+.head{display:flex;align-items:center;gap:8mm;text-align:center}
+.logo{width:44mm;height:auto;flex:none;mix-blend-mode:multiply}
+.head .t{flex:1}
+.head .rep{font:600 3.4mm/1.2 system-ui;letter-spacing:.35mm;color:var(--mute);text-transform:uppercase}
+.head .ac{font:700 5mm/1.2 system-ui;color:var(--green-d);margin-top:.6mm}
+h1{margin:2mm 0 0;font:700 9mm/1.1 Georgia,serif;letter-spacing:.5mm;white-space:nowrap;color:var(--green-d);text-transform:uppercase}
+.sub{font:italic 3.7mm/1.3 Georgia,serif;color:var(--mute);margin-top:.8mm}
+.num{width:46mm;text-align:right;font:600 3.2mm/1.3 system-ui;color:var(--mute);flex:none}
+.num b{display:block;font:700 4.3mm/1.2 ui-monospace,Consolas,monospace;color:var(--ink)}
+.body{flex:1;display:flex;gap:10mm;margin-top:9mm;min-height:0}
+.photo{width:46mm;flex:none;text-align:center;font:3.4mm/1.3 system-ui;color:var(--mute)}
+.photo .ph{width:46mm;height:54mm;border:.5mm solid var(--green);background:#F2F6F3;display:grid;place-items:center;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover}
+.photo .ph span{font-size:3mm;padding:2mm}
+.photo .cap{margin-top:1.4mm}
+.main{flex:1;min-width:0}
+.cert{font:italic 4.6mm/1.45 Georgia,serif;margin:0 0 3mm}
+.name{font:700 12mm/1.08 Georgia,serif;color:var(--ink);margin:0 0 2.5mm;overflow-wrap:anywhere}
+.cat{display:inline-block;background:var(--green);color:#fff;border-radius:6mm;padding:1.5mm 6mm;font:700 4.4mm/1.2 system-ui;letter-spacing:.3mm;text-transform:uppercase}
+.addr{font:4.2mm/1.3 system-ui;color:var(--mute);margin:2.5mm 0 5mm}
+dl{display:grid;grid-template-columns:54mm 1fr;gap:2.6mm 4mm;margin:0;font:4.4mm/1.3 system-ui}
+dt{color:var(--mute)}dd{margin:0;font-weight:600}
+.side{width:60mm;flex:none;display:flex;flex-direction:column;align-items:center;text-align:center}
+.qr{width:56mm;height:56mm;padding:2mm;border:.5mm solid var(--green);background:#fff}
+.qr svg{width:100%;height:100%;display:block}
+.side .qc{font:3.3mm/1.3 system-ui;color:var(--mute);margin-top:1.6mm}
+.st{margin-top:3mm;border-radius:2mm;padding:2mm 3mm;font:700 5.2mm/1.15 system-ui;letter-spacing:.4mm;text-transform:uppercase;color:#fff;width:100%}
+.st small{display:block;font:500 2.9mm/1.3 system-ui;letter-spacing:0;text-transform:none;margin-top:.6mm}
+.st.valide{background:var(--green)}.st.expire{background:var(--red)}.st.suspendu{background:#C46A00}.st.non_agree{background:#6B7A72}
+.oblig{font:italic 3.3mm/1.4 Georgia,serif;color:var(--mute);text-align:center;margin:0 100mm 2mm 52mm;border-top:.3mm solid var(--line);padding-top:2.2mm}
+.foot{display:flex;align-items:flex-end;justify-content:space-between;gap:8mm;margin-top:2mm;font:3mm/1.35 system-ui;color:var(--mute)}
+.sign{width:62mm;text-align:center}.sign .l{border-top:.35mm solid var(--ink);margin-top:11mm;padding-top:1mm;color:var(--ink);font-weight:600}
+.ver{flex:1;text-align:center}
+.demo{color:#8A6A00}
+.err{max-width:640px;margin:40px auto;background:#fff;border-left:6px solid var(--red);padding:18px 20px;border-radius:10px}
+.sealslot{position:absolute;left:18mm;bottom:12mm;z-index:2}.sealslot .sec-seal{width:28mm;height:28mm}
+.holoslot{position:absolute;right:76mm;bottom:21mm;z-index:2}
+.stamp{position:absolute;right:80mm;bottom:40mm;transform:rotate(-12deg);border:.9mm solid;border-radius:3mm;padding:1.5mm 5mm;font:800 8mm/1 system-ui;letter-spacing:1mm;text-transform:uppercase;opacity:.82;z-index:3}
+.stamp.expire{color:var(--red)}.stamp.suspendu{color:#C46A00}.stamp.non_agree{color:#6B7A72}
+@page{size:A4 landscape;margin:0}
+@media print{html,body{background:#fff}.bar{display:none}#stage{padding:0;display:block}#wrap{width:auto!important;height:auto!important}.sheet{transform:none!important;box-shadow:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+.cat.titre{background:var(--blue)}
+.head .t{min-width:0}
+</style>
+</head>
+<body>
+<div class="bar"><b>Titre réglementaire</b><button id="pr">🖨 Imprimer / PDF</button><a class="alt" href="/verifier.html">Vérifier un document</a></div>
+<div id="stage"><div id="wrap"><div class="sheet" id="sheet"><div class="sub" style="padding:20mm">Chargement du titre…</div></div></div></div>
+<script src="/assets/qrcode.min.js"></script>
+<script src="/config.js"></script>
+<script src="/secure-doc.js"></script>
+<script>
+const API=window.API_BASE||'';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const P=new URLSearchParams(location.search);
+const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const dfr=s=>{if(!s)return '—';const d=new Date(s+'T12:00:00');return d.getDate()+(d.getDate()===1?'er':'')+' '+MOIS[d.getMonth()]+' '+d.getFullYear()};
+const STX={valide:'Titre en cours de validité',expire:'Titre expiré',en_cours:'Titre non encore délivré'};
+function qr(text){try{const q=qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch{return ''}}
+function fit(){const sh=$('#sheet'),w=$('#wrap');if(!sh||matchMedia('print').matches)return;const mm=96/25.4,W=297*mm,H=210*mm,s=Math.min(document.documentElement.clientWidth-28,W)/W;sh.style.transform='scale('+s+')';w.style.width=(W*s)+'px';w.style.height=(H*s)+'px'}
+async function init(){
+  const id=P.get('id'),k=P.get('k');
+  if(!id||!k){fail('Lien incomplet : ouvrez le titre depuis E-Pharma ou en scannant son QR code.');return}
+  let c;try{const r=await fetch(API+'/api/public/titre?id='+encodeURIComponent(id)+'&k='+encodeURIComponent(k),{cache:'no-store'});c=await r.json();if(!r.ok)throw new Error(c.error||'Titre introuvable')}catch(e){fail(e.message);return}
+  const url=location.origin+location.pathname+'?id='+encodeURIComponent(id)+'&k='+encodeURIComponent(k);
+  const stamp=c.statut==='valide'?'':'<div class="stamp '+(c.statut==='en_cours'?'non_agree':c.statut)+'">'+esc(c.statut_label)+'</div>';
+  document.title=c.type_label+' — '+c.numero;
+  $('#sheet').innerHTML=`<div class="frame"></div><div class="flag"></div><div class="flag b"></div><i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i>
+  <div class="inner">
+   <div class="head"><img class="logo" src="/assets/acorep-logo.jpg" alt="ACOREP">
+    <div class="t"><div class="rep">République démocratique du Congo</div><div class="ac">Autorité Congolaise de Réglementation Pharmaceutique</div><h1 style="font-size:${c.type_label.length>34?5.6:8.2}mm;white-space:normal;line-height:1.15">${esc(c.type_label.toUpperCase())}</h1><div class="sub">Titre réglementaire délivré à l’issue de l’instruction du dossier ${esc(c.depot?'déposé le '+dfr(c.depot):'')}</div></div>
+    <div class="num">Numéro du titre<b>${esc(c.numero)}</b><span style="display:block;margin-top:1.4mm">Code de contrôle</span><b class="sec-ctl">${esc(EPSec.ctrl(c.controle))}</b></div></div>
+   <div class="body">
+    <div class="main" style="padding-left:6mm">
+     <p class="cert">Il est certifié que le titre réglementaire ci-dessous est délivré à</p>
+     <div class="name">${esc(c.titulaire)}</div><span class="cat titre">${esc(c.type_label)}</span>
+     <div class="addr">${esc([c.prov].filter(Boolean).join(', ')||'—')}</div>
+     <dl><dt>Objet du titre</dt><dd>${esc(c.objet||'—')}</dd>
+      <dt>Nature du titre</dt><dd>${esc(c.type_label)}</dd>
+      <dt>Date de délivrance</dt><dd>${dfr(c.emission)}</dd>
+      <dt>Valable jusqu’au</dt><dd>${dfr(c.expiration)}</dd>
+      <dt>Dossier</dt><dd>${esc(c.numero)}</dd>
+      <dt>Statut de validité</dt><dd>${esc(STX[c.statut]||c.statut_label)}</dd></dl>
+    </div>
+    <div class="side"><div class="qr">${qr(url)}</div><div class="qc">Scannez pour vérifier l’authenticité et l’état réel de ce titre</div>
+     <div class="st ${c.statut==='en_cours'?'non_agree':c.statut}">${esc(c.statut_label)}<small>${c.expiration?'jusqu’au '+dfr(c.expiration):''}</small></div></div>
+   </div>
+   ${stamp}
+   <div class="sealslot">${EPSec.seal(c.numero,'ENREGISTRÉ')}</div>${P.get('holo')==='0'?'':'<div class="holoslot">'+EPSec.holo(c.numero)+'</div>'}
+   <div class="oblig">Le titulaire est tenu de respecter les conditions attachées à ce titre, de le renouveler avant son expiration et de signaler toute modification du produit, de l’établissement ou de l’activité autorisée.</div>
+   <div class="foot"><div class="sign"><div class="l">Le Directeur Général${c.signataire?'<br><span style="font-weight:400">'+esc(c.signataire)+'</span>':''}</div></div>
+    <div class="ver">Vérifié sur E-Pharma le ${new Date(c.verified_at).toLocaleString('fr-FR')} · Statut lu en temps réel sur le registre national<br><span class="demo">Prototype de démonstration BITEC — données fictives, document non officiel</span></div>
+    <div class="sign"><div class="l">Le Pharmacien Inspecteur</div></div></div>
+  </div>`;
+  EPSec.layers($('#sheet'),297,210);
+  fit();
+}
+function fail(m){$('#stage').innerHTML='<div class="err"><b>Titre non vérifiable</b><br>'+esc(m)+'</div>'}
+window.addEventListener('resize',fit);window.addEventListener('beforeprint',()=>{$('#sheet').style.transform='none'});window.addEventListener('afterprint',fit);
+$('#pr').onclick=()=>window.print();
+init();
+</script>
+</body>
+</html>

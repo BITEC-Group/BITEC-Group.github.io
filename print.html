@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-Pharma — Document</title>
+<style>
+:root{--green:#0E6B38;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--ink:#14231B;--mute:#5B6B62;--line:#CBD6D0}
+*{box-sizing:border-box}
+body{margin:0;background:#E8EDEA;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink)}
+.bar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:5}
+.bar b{flex:1;min-width:120px}
+button,a.b{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#fff;cursor:pointer;text-decoration:none}
+button.alt,a.b.alt{background:#fff;color:var(--green)}
+#docw{margin:14px auto;overflow:hidden}#doc{width:210mm;transform-origin:top left}
+.page{width:210mm;min-height:297mm;margin:0;background:#fff;padding:14mm 14mm 18mm;box-shadow:0 2px 14px rgba(0,0,0,.15);position:relative;overflow:hidden}
+.flag{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+.hd{display:flex;align-items:center;gap:12px;margin:10px 0 14px;border-bottom:2px solid var(--green);padding-bottom:10px}
+.hd .t{flex:1}.hd h1{margin:0;font-size:20px;color:var(--green)}.hd small{color:var(--mute)}
+.num{font-weight:700;font-size:15px;text-align:right}
+dl{display:grid;grid-template-columns:170px 1fr;gap:4px 10px;margin:10px 0}dt{color:var(--mute)}dd{margin:0;font-weight:600}
+table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}th{background:#EEF4F0;font-size:12px}
+td.r,th.r{text-align:right}.tot td{font-weight:700;background:#F6F9F7}
+.qrs{display:flex;gap:18px;justify-content:flex-end;align-items:flex-end;margin-top:14px;flex-wrap:wrap}
+.qrs div{text-align:center;font-size:11px;color:var(--mute);max-width:200px}
+.paybox{border:2px dashed var(--red);border-radius:10px;padding:10px 12px;margin-top:12px;display:flex;gap:14px;align-items:center}
+.paybox .u{word-break:break-all;font-size:11px;color:var(--mute)}
+.sign{display:flex;gap:20px;margin-top:40px}.sign div{flex:1;border-top:1px solid var(--ink);padding-top:4px;font-size:12px;color:var(--mute)}
+.stamp{display:inline-block;border:3px solid;border-radius:6px;padding:2px 10px;font-weight:800;transform:rotate(-6deg);margin:8px 0 14px}
+.s-ok{color:#0A6B33;border-color:#0A6B33}.s-due{color:var(--red);border-color:var(--red)}
+.ft{position:absolute;left:16mm;right:16mm;bottom:13mm;font-size:10.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:5px}
+.err{max-width:600px;margin:30px auto;background:#FDE6E8;border:1px solid #F0A5AC;color:#7D0913;border-radius:10px;padding:14px}
+#send{display:none;max-width:210mm;margin:12px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+#send label{display:block;font-size:12px;color:var(--mute);margin:8px 0 3px}#send input{width:100%;padding:8px;border:1px solid #BFCBC4;border-radius:8px;font:inherit}
+#send .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ok{background:#E3F5EA;border:1px solid #9AD7B1;color:#0A5A2B;border-radius:8px;padding:8px;margin-top:8px}.ko{background:#FDE6E8;border:1px solid #F0A5AC;color:#7D0913;border-radius:8px;padding:8px;margin-top:8px}
+@media print{body{background:#fff}.bar,#send,#ep-pill,#ep-panel{display:none!important}#docw{width:auto!important;height:auto!important;margin:0}#doc{transform:none!important}.page{box-shadow:none;margin:0;width:210mm;min-height:297mm;padding:14mm 14mm 18mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.paybox,table,.qrs{break-inside:avoid}@page{size:A4;margin:0}}
+</style>
+<link rel="stylesheet" href="/secure-doc.css">
+</head>
+<body>
+<div class="bar"><b id="ttl">Document</b><button id="pr">🖨 Imprimer</button><button id="pdf" class="alt">⬇ Télécharger PDF</button><button id="snd" class="alt" style="display:none">✉ Envoyer au patient</button><button class="alt" onclick="window.close()">Fermer</button></div>
+<div id="send"></div>
+<div id="docw"><div id="doc"></div></div>
+<script src="/config.js"></script>
+<script src="/offline.js"></script>
+<script src="/secure-doc.js"></script>
+<script src="/assets/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const P=new URLSearchParams(location.search),T=P.get('t'),ID=P.get('id'),ROLE=P.get('r')||'admin',KEY=P.get('k'),ACT=P.get('act'),USER=P.get('u')||'';
+const qr=(t,s=110)=>{try{const q=qrcode(0,'M');q.addData(t);q.make();return q.createSvgTag({cellSize:3,margin:0,scalable:true}).replace('<svg','<svg style="width:'+s+'px;height:'+s+'px"')}catch{return ''}};
+const usd=n=>new Intl.NumberFormat('fr-FR').format(n)+' $';
+const head=(title,num,date)=>`<div class="flag"></div><div class="hd"><svg width="46" height="46" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff" stroke="#0E6B38" stroke-width="2"/><path d="M26 14h12v12h12v12H38v12H26V38H14V26h12z" fill="#0E6B38"/><path d="M14 52 Q32 44 52 22" fill="none" stroke="#CE1021" stroke-width="4" stroke-linecap="round"/><path d="M18 56 Q36 50 56 30" fill="none" stroke="#F7D618" stroke-width="3" stroke-linecap="round"/></svg><div class="t"><h1>${title}</h1><small>E-Pharma · Plateforme intégrée de gestion des officines pharmaceutiques</small></div><div class="num">${esc(num)}<br><small style="font-weight:400">${esc(date)}</small></div></div>`;
+const foot='<div class="ft">Prototype de démonstration BITEC — non officiel · données fictives. Document généré électroniquement ; l’authenticité se vérifie par lecture du QR code sur E-Pharma.</div>';
+let DOC=null;
+async function load(){
+  try{
+    const url='/api/doc/'+T+'/'+encodeURIComponent(ID)+(KEY?'?k='+encodeURIComponent(KEY):'');
+    const d=await EP.api('GET',url,null,{role:KEY?undefined:ROLE,user:USER||undefined});DOC=d;
+    if(T==='pv'){document.title='PV '+d.id;$('#ttl').textContent='Procès-verbal '+d.id;
+      $('#doc').innerHTML=`<div class="page" id="sheet">${head('Procès-verbal de constat',d.id,d.date)}
+      <dl><dt>Officine</dt><dd>${esc(d.officine.nom||d.off)} (${esc(d.offId)})</dd><dt>Localisation</dt><dd>${esc(d.officine.prov||d.prov)} — ${esc(d.officine.entite||'')}</dd><dt>Pharmacien responsable</dt><dd>${esc(d.officine.pharmacien||'—')}</dd><dt>N° de carte</dt><dd>${esc(d.officine.carte||'— (non identifiée)')}</dd><dt>Inspecteur</dt><dd>${esc(d.insp)}</dd></dl>
+      <table><tr><th>Infraction constatée</th><th class="r">Amende</th></tr>${d.items.map(i=>`<tr><td>${esc(i[0])}</td><td class="r">${usd(i[1])}</td></tr>`).join('')||'<tr><td colspan="2">Aucune infraction : constat de conformité.</td></tr>'}<tr class="tot"><td>Total</td><td class="r">${usd(d.total)}</td></tr></table>
+      ${d.obs?`<p><b>Observations :</b> ${esc(d.obs)}</p>`:''}
+      ${d.total?(d.paid?`<div class="stamp s-ok">PAYÉ · ${esc(d.mode)}</div><div>Reçu n° <b>${esc(d.rcp)}</b></div>`:'<div class="stamp s-due">À PERCEVOIR</div>'):''}
+      ${d.payUrl?`<div class="paybox"><div>${qr(d.payUrl,120)}</div><div><b>Payer par QR code ou par lien</b><br>Scannez le QR code avec votre téléphone ou ouvrez le lien pour payer ${usd(d.total)} (mobile money, carte).<div class="u">${esc(d.payUrl)}</div></div></div>`:''}
+      <div class="qrs"><div>${qr(d.qr,90)}<br>Authenticité · ${esc(d.id)}</div></div>
+      <div class="sign"><div>Inspecteur</div><div>Représentant de l’officine</div></div>${foot}</div>`}
+    else{document.title='Ordonnance '+d.id;$('#ttl').textContent='Ordonnance '+d.id;
+      if(!KEY&&(ROLE==='med'||ROLE==='admin'))$('#snd').style.display='';
+      $('#doc').innerHTML=`<div class="page" id="sheet">${head('Ordonnance électronique',d.id,d.date)}
+      <dl><dt>Patient</dt><dd>${esc(d.patient)}${d.age?', '+esc(d.age)+' ans':''}</dd><dt>Prescripteur</dt><dd>${esc(d.doctor.nom)} · ${esc(d.doctor.ordre)}</dd><dt>Province</dt><dd>${esc(d.doctor.prov)}</dd><dt>Signature numérique</dt><dd style="font-family:monospace">${esc(d.sig)}</dd><dt>État</dt><dd>${esc(d.status)}</dd></dl>
+      <table><tr><th>Médicament</th><th>Posologie</th><th class="r">Qté prescrite</th><th class="r">Délivré</th></tr>${d.lines.map(l=>`<tr><td>${esc(l.name||l.pid)}</td><td>${esc(l.poso)}</td><td class="r">${l.qty}</td><td class="r">${l.done}</td></tr>`).join('')}</table>
+      <p style="font-size:12px;color:var(--mute)">Seuls les produits autorisés figurent sur cette ordonnance. Le pharmacien scanne le QR pour retrouver les produits prescrits, vérifier le stock et enregistrer une délivrance totale ou partielle.</p>
+      <div class="qrs"><div>${qr(d.qr,140)}<br>${esc(d.id)}</div></div>
+      <div class="sign"><div>Cachet et signature du prescripteur</div><div>Cachet du pharmacien</div></div>${foot}</div>`}
+    fit();afterRender(()=>{secure();fit()});
+    if(ACT==='print')afterRender(()=>window.print());
+    if(ACT==='pdf')setTimeout(downloadPdf,600);
+    if(ACT==='send'&&!KEY)setTimeout(openSend,300);
+  }catch(e){$('#doc').innerHTML='<div class="err">Impossible d’afficher le document : '+esc(e.message)+'</div>'}
+}
+/* Couches de sécurité (guillochis, trame COPIE, micro-texte, cachet) calées sur la hauteur réelle de la feuille */
+function secure(){const sh=$('#sheet');if(!sh||!window.EPSec||!DOC)return;sh.querySelectorAll('.sec-layers').forEach(e=>e.remove());
+  const h=Math.max(297,Math.round(sh.scrollHeight/96*25.4));EPSec.layers(sh,210,h);
+  const q=sh.querySelector('.qrs');if(q&&!q.querySelector('.sec-seal'))q.insertAdjacentHTML('afterbegin','<div>'+EPSec.seal(DOC.id,'ENREGISTRÉ')+'</div>')}
+/* Aperçu fidèle : feuille A4 réelle réduite à la largeur de la fenêtre (ce qui est affiché est ce qui s'imprime) */
+function fit(){const d=$('#doc'),w=$('#docw');if(!d||!w)return;const W=210*96/25.4,s=Math.min(1,(document.documentElement.clientWidth-24)/W);d.style.transform=s<1?'scale('+s+')':'none';w.style.width=(W*s)+'px';w.style.height=(d.offsetHeight*s)+'px'}
+window.addEventListener('resize',fit);window.addEventListener('beforeprint',()=>{const d=$('#doc');if(d)d.style.transform='none'});window.addEventListener('afterprint',fit);
+async function downloadPdf(){
+  const el=$('#sheet');if(!el)return;const d0=$('#doc'),t0=d0.style.transform;d0.style.transform='none';const name=(T==='pv'?'PV-':'Ordonnance-')+ID+'.pdf';
+  if(!window.html2pdf){alert('Bibliothèque PDF indisponible hors ligne : utilisez « Imprimer » puis « Enregistrer au format PDF ».');window.print();return}
+  const prev=el.style.boxShadow;el.style.boxShadow='none';el.style.margin='0';
+  try{await html2pdf().set({margin:0,filename:name,image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(el).save()}
+  catch(e){alert('Échec de la génération PDF ('+e.message+') : utilisez « Imprimer » puis « Enregistrer au format PDF ».')}
+  finally{el.style.boxShadow=prev;el.style.margin='';d0.style.transform=t0;fit()}}
+/* Envoi de l'ordonnance au patient : e-mail, WhatsApp, SMS ou lien */
+function openSend(){
+  const d=DOC,s=$('#send');s.style.display='block';
+  s.innerHTML=`<h3 style="margin:0 0 6px">Envoyer l’ordonnance ${esc(d.id)} au patient</h3><div style="font-size:12.5px;color:var(--mute)">Le patient reçoit un lien sécurisé (valable 30 jours) vers l’ordonnance : il peut l’afficher, l’imprimer ou l’enregistrer en PDF, et présenter le QR code à la pharmacie.</div>
+  <label>Téléphone du patient (WhatsApp / SMS), format international</label><input id="s_ph" value="${esc(d.patient_phone||'')}" placeholder="+243…">
+  <label>E-mail du patient</label><input id="s_em" value="${esc(d.patient_email||'')}" placeholder="patient@exemple.org">
+  <div class="row"><button id="s_wa">WhatsApp</button><button id="s_sms" class="alt">SMS</button><button id="s_mail" class="alt">E-mail</button><button id="s_lnk" class="alt">Copier le lien</button></div><div id="s_msg"></div><div id="s_hist" style="margin-top:10px;font-size:12px;color:var(--mute)"></div>`;
+  const send=async(ch,to)=>{$('#s_msg').innerHTML='';
+    try{const r=await EP.api('POST','/api/rx/'+encodeURIComponent(d.id)+'/send',{channel:ch,to},{role:ROLE,user:USER||undefined,noQueue:true,online:true});
+      if(ch==='whatsapp')window.open('https://wa.me/'+to.replace(/[^\d]/g,'')+'?text='+encodeURIComponent(r.text),'_blank');
+      else if(ch==='sms')location.href='sms:'+to+'?&body='+encodeURIComponent(r.text);
+      else if(ch==='email')location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(r.subject)+'&body='+encodeURIComponent(r.text);
+      else{try{await navigator.clipboard.writeText(r.url)}catch{prompt('Lien à copier',r.url)}}
+      $('#s_msg').innerHTML='<div class="ok">'+(ch==='link'?'Lien copié.':'Message préparé dans votre application ('+ch+'). Envoi enregistré dans le journal.')+'</div>';hist()}
+    catch(e){$('#s_msg').innerHTML='<div class="ko">'+esc(e.message)+'</div>'}};
+  $('#s_wa').onclick=()=>send('whatsapp',$('#s_ph').value.trim());$('#s_sms').onclick=()=>send('sms',$('#s_ph').value.trim());
+  $('#s_mail').onclick=()=>send('email',$('#s_em').value.trim());$('#s_lnk').onclick=()=>send('link','');
+  const hist=async()=>{try{const h=await EP.api('GET','/api/rx/'+encodeURIComponent(d.id)+'/sends',null,{role:ROLE,user:USER||undefined});$('#s_hist').innerHTML=h.length?'Envois précédents : '+h.map(x=>esc(x.channel)+' → '+esc(x.dest)+' ('+new Date(x.ts).toLocaleString('fr-FR')+')').join(' · '):''}catch{}};hist();
+  s.scrollIntoView({behavior:'smooth'})}
+/* Attend la fin du rendu (polices, QR code) avant d'ouvrir l'impression : évite un aperçu vide ou incomplet */
+async function afterRender(fn){
+  try{await (document.fonts&&document.fonts.ready)}catch{}
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  setTimeout(fn,250)}
+$('#pr').onclick=()=>window.print();$('#pdf').onclick=downloadPdf;$('#snd').onclick=openSend;load();
+</script>
+</body>
+</html>

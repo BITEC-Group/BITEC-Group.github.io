@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0E6B38">
+<title>Vérifier un document — E-Pharma</title>
+<style>
+:root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.flag{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+header{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:14px 16px}header h1{margin:0;font-size:20px}header small{opacity:.85}
+main{max-width:520px;margin:18px auto;padding:0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+input{width:100%;padding:11px;border:1px solid #BFCBC4;border-radius:10px;font:inherit;letter-spacing:.06em;text-transform:uppercase}
+button{margin-top:16px;width:100%;font:inherit;font-weight:600;background:var(--green);color:#fff;border:0;border-radius:10px;padding:12px;cursor:pointer}
+.msg{margin-top:14px;padding:10px 12px;border-radius:10px;font-size:14.5px}.ko{background:#FDE6E8;color:#7D0913;border:1px solid #F0A5AC}.ok{background:#E3F5EA;color:#0A5A2B;border:1px solid #9AD7B1}
+.hint{color:var(--mute);font-size:13.5px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<header><h1>Vérifier un document</h1><small>Certificat d’agrément ou titre réglementaire — Autorité Congolaise de Réglementation Pharmaceutique</small></header>
+<main><div class="card">
+<p style="margin:0 0 4px">Le QR code est illisible ? Saisissez le <b>numéro</b> et le <b>code de contrôle</b> imprimés en haut à droite du document.</p>
+<label for="n">Numéro du document</label><input id="n" placeholder="AG-PHA-1A2B3C4D ou TR-1A2B3C4D" autocomplete="off" autocapitalize="characters">
+<label for="c">Code de contrôle</label><input id="c" placeholder="XXXXX-XXXXX" autocomplete="off" autocapitalize="characters" maxlength="11">
+<button id="go">Vérifier</button><div id="out"></div>
+<div class="hint">Le résultat affiche l’état réel du document lu sur le registre national : valide, expiré ou suspendu. Un document dont le numéro ou le code ne correspond à aucun enregistrement doit être considéré comme non authentique.</div>
+</div></main>
+<script src="/config.js"></script>
+<script>
+const API=window.API_BASE||'';const $=s=>document.querySelector(s);
+const P=new URLSearchParams(location.search);if(P.get('n'))$('#n').value=P.get('n');if(P.get('c'))$('#c').value=P.get('c');
+$('#go').onclick=async()=>{const o=$('#out');o.className='';o.textContent='Vérification…';
+  try{const r=await fetch(API+'/api/public/verifier?n='+encodeURIComponent($('#n').value.trim())+'&c='+encodeURIComponent($('#c').value.trim()),{cache:'no-store'});const j=await r.json();
+    if(!r.ok)throw new Error(j.error||'Vérification impossible');o.className='msg ok';o.textContent='Document authentique enregistré : ouverture…';location.href=API+j.url}
+  catch(e){o.className='msg ko';o.textContent=e.message}};
+['n','c'].forEach(i=>$('#'+i).addEventListener('keydown',e=>{if(e.key==='Enter')$('#go').click()}));
+</script>
+</body>
+</html>

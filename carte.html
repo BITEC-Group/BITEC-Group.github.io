@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0E6B38">
+<title>Carte des pharmacies agréées — E-Pharma</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+.flag{height:6px;flex:none;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+header{flex:none;background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:18px}header small{display:block;opacity:.85;font-weight:400;font-size:12px}
+header .sp{flex:1}
+header a{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 10px;font-size:13.5px}
+.demo{flex:none;background:#FFF3C4;color:#5A4500;font-size:12px;text-align:center;padding:3px 8px}
+.wrap{flex:1;min-height:0;display:flex}
+#map{flex:1;min-width:0}
+aside{width:360px;max-width:42%;overflow:auto;background:#fff;border-left:1px solid var(--line);padding:14px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.kv div{background:#F3F8F5;border-radius:10px;padding:6px 10px}.kv b{display:block;font-size:20px}.kv small{color:var(--mute)}
+h2{margin:0 0 2px;font-size:18px}.sub{color:var(--mute);font-size:13px}
+.search{width:100%;padding:9px 10px;border:1px solid #BFCBC4;border-radius:10px;font:inherit;margin:8px 0}
+button,.btn{font:inherit;background:var(--green);color:#fff;border:0;border-radius:10px;padding:8px 12px;cursor:pointer;text-decoration:none;display:inline-block}
+button.alt{background:#fff;color:var(--green);border:1px solid var(--green)}
+.ph{border-top:1px solid var(--line);padding:8px 0;font-size:14px}.ph b{display:block}.ph small{color:var(--mute)}
+.ph a{color:var(--blue);font-size:13px;margin-right:10px;cursor:pointer;text-decoration:none}
+.gtip{font:13px system-ui;line-height:1.35}
+.legend{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mute);margin:6px 0}
+.legend i{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#DDF1E4,#0A4F29)}
+@media(max-width:820px){.wrap{flex-direction:column}#map{flex:none;height:55vh}aside{width:100%;max-width:none;border-left:0;border-top:1px solid var(--line);flex:1}}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<header>
+  <div><h1>Carte des pharmacies agréées</h1><small>E-Pharma — République démocratique du Congo · accès libre, sans compte</small></div>
+  <span class="sp"></span>
+  <a href="/install.html">Installer l’application</a><a href="/app/">Ouvrir l’application</a>
+</header>
+<div class="demo">Prototype de démonstration BITEC — données fictives, non officiel</div>
+<div class="wrap"><div id="map"></div><aside id="panel"><div class="sub">Chargement de la carte…</div></aside></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="/config.js"></script>
+<script>
+const API=window.API_BASE||'';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const GEO2FR={'Upper Uele':'Haut-Uele','Lower Uele':'Bas-Uele','North Kivu':'Nord-Kivu','South Kivu':'Sud-Kivu','Central Kasai':'Kasaï-Central','Kasai':'Kasaï','Kasai-Oriental':'Kasaï-Oriental'};
+const km=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(m<10000?1:0)+' km';
+const hav=(a,b,c,d)=>{const R=6371000,t=x=>x*Math.PI/180,dl=t(c-a),dg=t(d-b),k=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(k))};
+const dir=o=>'https://www.google.com/maps/dir/?api=1&destination='+o.lat+','+o.lon;
+let map,geo,stats={},off=[],sel=null,me=null,markers=L.layerGroup(),meMarker=null,q='';
+const col=(n,mx)=>{const t=Math.sqrt(Math.min(1,n/(mx||1)));const a=[221,241,228],b=[10,79,41];return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')'};
+async function init(){
+  map=L.map('map',{zoomControl:true}).setView([-2.9,23.5],5);
+  epTileLayer().addTo(map);
+  markers.addTo(map);
+  try{
+    const [g,s,o]=await Promise.all([fetch('/prov.json').then(r=>r.json()),fetch(API+'/api/public/stats').then(r=>r.json()),fetch(API+'/api/public/officines').then(r=>r.json())]);
+    s.forEach(x=>stats[x.prov]=x);off=o;
+    const mx=Math.max(1,...s.map(x=>x.agrees));
+    geo=L.geoJSON(g,{style:f=>({color:'#CE1021',weight:1.2,fillColor:col((stats[GEO2FR[f.properties.name]||f.properties.name]||{}).agrees||0,mx),fillOpacity:.55}),
+      onEachFeature:(f,l)=>{const fr=GEO2FR[f.properties.name]||f.properties.name,t=stats[fr];
+        l.bindTooltip('<b>'+esc(fr)+'</b>'+(t?'<br>'+t.officines+' officines · '+t.agrees+' agréées<br>'+t.depots+' dépôts · '+t.importateurs+' importateurs':''),{sticky:true,className:'gtip'});
+        l.on({mouseover:e=>{e.target.setStyle({weight:3,fillOpacity:.8})},mouseout:e=>geo.resetStyle(e.target),click:()=>{select(fr);map.fitBounds(l.getBounds(),{padding:[20,20]})}})}}).addTo(map);
+    draw();panel();
+  }catch(e){$('#panel').innerHTML='<div class="sub">Carte indisponible : '+esc(e.message)+'</div>'}
+}
+function visible(){const n=q.trim().toLowerCase();return off.filter(o=>(!sel||o.prov===sel)&&(!n||(o.nom+' '+o.entite).toLowerCase().includes(n)))}
+function draw(){markers.clearLayers();visible().forEach(o=>{const m=L.circleMarker([o.lat,o.lon],{radius:6,color:'#fff',weight:1.5,fillColor:'#0E8A45',fillOpacity:1});
+  m.bindPopup('<b>'+esc(o.nom)+'</b><br>'+esc(o.prov)+' · '+esc(o.entite)+'<br>Agrément valide jusqu’au '+esc(o.expiration)+(me?'<br>À '+km(hav(me.lat,me.lon,o.lat,o.lon)):'')+'<br><a target="_blank" rel="noopener" href="'+dir(o)+'">Itinéraire</a>');markers.addLayer(m)})}
+function select(p){sel=p;draw();panel()}
+function panel(){
+  const tot=Object.values(stats).reduce((a,x)=>({o:a.o+x.officines,g:a.g+x.agrees,d:a.d+x.depots,i:a.i+x.importateurs}),{o:0,g:0,d:0,i:0});
+  const s=sel?stats[sel]:{officines:tot.o,agrees:tot.g,depots:tot.d,importateurs:tot.i};
+  let list=visible();if(me)list=list.map(o=>({...o,dist:hav(me.lat,me.lon,o.lat,o.lon)})).sort((a,b)=>a.dist-b.dist);else list=list.slice().sort((a,b)=>a.nom.localeCompare(b.nom));
+  $('#panel').innerHTML='<h2>'+esc(sel||'Toute la RDC')+'</h2><div class="sub">'+(sel?'Province sélectionnée':'Survolez ou touchez une province pour ses statistiques')+'</div>'+
+   '<div class="kv"><div><b>'+(s?s.officines:0)+'</b><small>officines</small></div><div><b>'+(s?s.agrees:0)+'</b><small>agréées</small></div><div><b>'+(s?s.depots:0)+'</b><small>dépôts</small></div><div><b>'+(s?s.importateurs:0)+'</b><small>importateurs</small></div></div>'+
+   '<div class="legend">Peu<i></i>Beaucoup d’agréées</div>'+
+   '<input class="search" id="q" placeholder="Rechercher une pharmacie ou une commune…" value="'+esc(q)+'">'+
+   '<div><button id="loc">📍 Près de moi</button> '+(sel?'<button class="alt" id="all">Toute la RDC</button>':'')+'</div>'+
+   '<div class="sub" style="margin-top:8px">'+list.length+' pharmacie(s) agréée(s)'+(me?' · triées par distance':'')+'</div>'+
+   list.slice(0,40).map(o=>'<div class="ph"><b>'+esc(o.nom)+'</b><small>'+esc(o.prov)+' · '+esc(o.entite)+(o.dist!==undefined?' · '+km(o.dist):'')+'</small><br><a data-z="'+o.lat+','+o.lon+'">Voir sur la carte</a><a target="_blank" rel="noopener" href="'+dir(o)+'">Itinéraire</a></div>').join('')+(list.length>40?'<div class="sub">40 premières affichées : affinez la recherche.</div>':'');
+  $('#q').oninput=e=>{q=e.target.value;draw();const pos=e.target.selectionStart;panel();const n=$('#q');n.focus();n.setSelectionRange(pos,pos)};
+  const a=$('#all');if(a)a.onclick=()=>{sel=null;draw();panel();map.setView([-2.9,23.5],5)};
+  $('#loc').onclick=()=>{if(!navigator.geolocation){alert('Géolocalisation indisponible sur cet appareil.');return}
+    navigator.geolocation.getCurrentPosition(p=>{me={lat:p.coords.latitude,lon:p.coords.longitude};if(meMarker)meMarker.remove();meMarker=L.circleMarker([me.lat,me.lon],{radius:8,color:'#fff',weight:2,fillColor:'#007FFF',fillOpacity:1}).addTo(map).bindTooltip('Vous êtes ici');map.setView([me.lat,me.lon],13);draw();panel()},()=>alert('Position refusée ou indisponible : utilisez la recherche ou touchez une province.'),{enableHighAccuracy:true,timeout:12000})};
+  document.querySelectorAll('[data-z]').forEach(e=>e.onclick=()=>{const [la,lo]=e.dataset.z.split(',').map(Number);map.setView([la,lo],15)});
+}
+init();
+</script>
+<script src="/update.js"></script>
+</body>
+</html>

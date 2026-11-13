@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-Pharma</title>
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0E6B38">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --rdc-blue:#007FFF;--rdc-yellow:#F7D618;--rdc-red:#CE1021;
+  --ac-green:#0E6B38;--ac-green-d:#0A4F29;--ac-teal:#2BB3B1;
+  --bg:#F3F6F4;--card:#fff;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF;
+  --ok:#0E8A45;--warn:#C98A00;--bad:#CE1021;
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+.flag{height:6px;background:linear-gradient(90deg,var(--rdc-blue) 0 60%,var(--rdc-yellow) 60% 80%,var(--rdc-red) 80%)}
+header{background:var(--ac-green);color:#fff;display:flex;align-items:center;gap:14px;padding:8px 16px;position:sticky;top:0;z-index:1200}
+header .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+header .brand small{display:block;font-weight:400;font-size:11px;opacity:.85}
+header .sp{flex:1}
+header select{padding:6px 8px;border-radius:6px;border:0;font:inherit}
+#menuBtn{display:none;background:none;border:0;color:#fff;font-size:22px;cursor:pointer}
+.layout{display:flex;min-height:calc(100vh - 58px)}
+nav{width:232px;background:#fff;border-right:1px solid var(--line);padding:10px 8px;flex-shrink:0}
+nav a{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;color:var(--ink);text-decoration:none;margin-bottom:2px}
+nav a:hover{background:#EAF2ED}
+nav a.on{background:var(--ac-green);color:#fff}
+nav a.on .dot{background:var(--rdc-yellow)}
+nav .dot{width:8px;height:8px;border-radius:50%;background:var(--rdc-blue)}
+nav h6{margin:14px 10px 4px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+main{flex:1;padding:18px;min-width:0}
+h1{font-size:21px;margin:0 0 4px}
+.sub{color:var(--mute);margin-bottom:14px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h3{margin:0 0 10px;font-size:15px}
+.kpi .v{font-size:27px;font-weight:700}
+.kpi .l{color:var(--mute);font-size:12px}
+.kpi{border-top:4px solid var(--rdc-blue)}
+.kpi.y{border-top-color:var(--rdc-yellow)}.kpi.r{border-top-color:var(--rdc-red)}.kpi.g{border-top-color:var(--ac-green)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#F0F5F2;font-size:12px;color:var(--mute);position:sticky;top:0}
+.scroll{overflow:auto;max-height:430px;border:1px solid var(--line);border-radius:8px}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.t-ok{background:#DDF3E5;color:#0A6B33}.t-warn{background:#FBEFC8;color:#7A5600}.t-bad{background:#FBDADD;color:#9D0B19}.t-info{background:#D9EBFF;color:#004A99}.t-grey{background:#E8ECEA;color:#46534C}
+button,.btn{font:inherit;padding:7px 12px;border-radius:8px;border:1px solid var(--ac-green);background:var(--ac-green);color:#fff;cursor:pointer}
+button.alt{background:#fff;color:var(--ac-green)}
+button.blue{background:var(--rdc-blue);border-color:var(--rdc-blue)}
+button.red{background:var(--rdc-red);border-color:var(--rdc-red)}
+button.sm{padding:3px 8px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{font:inherit;padding:7px 8px;border:1px solid #BFCBC4;border-radius:8px;background:#fff;max-width:100%}
+label{display:block;font-size:12px;color:var(--mute);margin:8px 0 3px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row>div{flex:1;min-width:140px}.row input,.row select{width:100%}
+.note{background:#FFF8DB;border:1px solid #EBD76A;border-radius:8px;padding:8px 10px;font-size:12.5px;margin:8px 0}
+.err{background:#FDE6E8;border:1px solid #F0A5AC;color:#7D0913;border-radius:8px;padding:8px 10px;margin:8px 0}
+.okmsg{background:#E3F5EA;border:1px solid #9AD7B1;color:#0A5A2B;border-radius:8px;padding:8px 10px;margin:8px 0}
+#map{height:560px;border-radius:12px;border:1px solid var(--line)}
+.maplay{display:grid;grid-template-columns:260px 1fr;gap:14px}
+.bar{height:14px;border-radius:4px;background:var(--rdc-blue)}
+.modal{position:fixed;inset:0;background:rgba(10,30,20,.55);display:none;align-items:center;justify-content:center;z-index:3000;padding:14px}
+.modal.on{display:flex}
+.modal .box{background:#fff;border-radius:14px;padding:18px;max-width:560px;width:100%;max-height:92vh;overflow:auto}
+.idcard{border:2px solid var(--ac-green);border-radius:14px;overflow:hidden;width:100%;max-width:420px;margin:auto;background:#fff}
+.idcard .top{background:var(--ac-green);color:#fff;padding:8px 12px;display:flex;align-items:center;gap:8px;font-weight:700}
+.idcard .stripe{height:6px;background:linear-gradient(90deg,var(--rdc-blue) 0 60%,var(--rdc-yellow) 60% 80%,var(--rdc-red) 80%)}
+.idcard .bd{padding:12px;display:flex;gap:12px}
+.idcard .bd dl{margin:0;font-size:12.5px;flex:1}.idcard dt{color:var(--mute);font-size:11px}.idcard dd{margin:0 0 5px;font-weight:600}
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;overflow:auto}
+.pipe .col{background:#EEF3F0;border-radius:10px;padding:8px;min-height:120px}
+.pipe .col h4{margin:0 0 6px;font-size:12px}
+.pipe .it{background:#fff;border:1px solid var(--line);border-left:4px solid var(--rdc-blue);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:12px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+@media(max-width:860px){
+  nav{position:fixed;left:-250px;top:64px;bottom:0;z-index:1100;transition:left .2s;overflow:auto}
+  nav.open{left:0;box-shadow:0 0 30px rgba(0,0,0,.3)}
+  #menuBtn{display:block}
+  .maplay{grid-template-columns:1fr}
+  #map{height:430px}
+  main{padding:12px}
+}
+@media print{
+  header,nav,.flag,#crumbs,.noprint,#ep-pill,#ep-panel,#bell,.navb{display:none!important}
+  body{background:#fff}
+  .layout{display:block}
+  main{padding:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card{box-shadow:none;break-inside:avoid}
+  .scroll{max-height:none!important;overflow:visible!important}
+  /* fenêtre ouverte (PV, ordonnance, carte) : seule la fenêtre est imprimée */
+  body:has(.modal.on) .layout,body:has(.modal.on) .flag{display:none!important}
+  body:has(.modal.on) .modal.on{position:static;background:none;display:block;padding:0}
+  body:has(.modal.on) .modal .box{box-shadow:none;max-height:none;overflow:visible;max-width:none;width:auto;padding:0}
+}
+.navb{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;padding:5px 10px;border-radius:8px;cursor:pointer;font:inherit}
+.navb:hover{background:rgba(255,255,255,.28)}.navb:disabled{opacity:.4;cursor:default}
+#crumbs{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+#crumbs button{padding:4px 10px}
+#bell{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;padding:5px 10px;border-radius:8px;cursor:pointer}
+#bell b{background:var(--rdc-red);border-radius:99px;padding:0 6px;margin-left:3px}
+#scopePill{background:var(--rdc-yellow);color:#4a3b00;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700}
+.tiles{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+a.tile{text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--rdc-blue);transition:transform .1s,box-shadow .1s}
+a.tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
+a.tile .ico{font-size:30px}a.tile small{color:var(--mute)}
+.maplay2{display:grid;grid-template-columns:230px 1fr 340px;gap:14px}
+@media(max-width:1180px){.maplay2{grid-template-columns:1fr}}
+.gp .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.gp .kv div{background:#F3F8F5;border-radius:8px;padding:6px 8px}.gp .kv b{display:block;font-size:19px}.gp .kv small{color:var(--mute)}
+.leaflet-tooltip.gtip{font:13px system-ui;line-height:1.35}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<div style="background:#FFF3C4;color:#5A4500;text-align:center;font-size:12px;padding:3px 8px;border-bottom:1px solid #E6D27A">Prototype de démonstration BITEC — non officiel · données 100 % fictives · <a href="/m/" style="color:inherit">Version mobile</a></div>
+<header>
+  <button id="menuBtn" aria-label="Menu">☰</button>
+  <button class="navb" id="navBack" title="Page précédente">◀</button><button class="navb" id="navFwd" title="Page suivante">▶</button><button class="navb" id="navHome" title="Retour à l’accueil">🏠 Accueil</button>
+  <div class="brand">
+    <svg width="40" height="40" viewBox="0 0 64 64" aria-label="Logo E-Pharma"><circle cx="32" cy="32" r="30" fill="#fff"/><path d="M26 14h12v12h12v12H38v12H26V38H14V26h12z" fill="#0E6B38"/><path d="M14 52 Q32 44 52 22" fill="none" stroke="#CE1021" stroke-width="4" stroke-linecap="round"/><path d="M18 56 Q36 50 56 30" fill="none" stroke="#F7D618" stroke-width="3" stroke-linecap="round"/></svg>
+    <div>E-Pharma<small>Plateforme intégrée de gestion des officines pharmaceutiques</small></div>
+  </div>
+  <div class="sp"></div>
+  <span id="scopePill" style="display:none"></span><button id="bell" title="Messagerie : alertes de votre secteur" style="display:none">🔔<b id="bellN">0</b></button>
+  <select id="role" title="Profil utilisateur (démonstration)"></select>
+</header>
+<div class="layout">
+  <nav id="nav"></nav>
+  <main><div id="crumbs"></div><div id="view"></div></main>
+</div>
+<div class="modal" id="modal"><div class="box"><div id="mbody" class="printable"></div><div class="row noprint" style="margin-top:12px"><button onclick="window.print()">Imprimer</button><button class="alt" onclick="closeM()">Fermer</button></div></div></div>
+
+<script src="/config.js"></script>
+<script src="/offline.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+let PROV_GEO=null;
+/* ====================== Données de référence ====================== */
+const PROVS = [ // [nom FR, nom geojson, ville chef-lieu, lat, lon, poids]
+ ['Kinshasa','Kinshasa','Kinshasa',-4.33,15.31,40],['Haut-Katanga','Haut-Katanga','Lubumbashi',-11.66,27.48,14],
+ ['Nord-Kivu','North Kivu','Goma',-1.68,29.22,10],['Sud-Kivu','South Kivu','Bukavu',-2.5,28.86,8],
+ ['Kongo-Central','Kongo-Central','Matadi',-5.82,13.46,6],['Kasaï-Oriental','Kasai-Oriental','Mbuji-Mayi',-6.15,23.6,6],
+ ['Kasaï-Central','Central Kasai','Kananga',-5.9,22.42,4],['Tshopo','Tshopo','Kisangani',0.52,25.2,5],
+ ['Ituri','Ituri','Bunia',1.56,30.25,4],['Lualaba','Lualaba','Kolwezi',-10.71,25.47,4],
+ ['Équateur','Équateur','Mbandaka',0.05,18.26,2],['Tanganyika','Tanganyika','Kalemie',-5.93,29.19,2],
+ ['Maniema','Maniema','Kindu',-2.95,25.92,2],['Kwilu','Kwilu','Kikwit',-5.04,18.82,3],
+ ['Haut-Lomami','Haut-Lomami','Kamina',-8.74,25.0,2],['Lomami','Lomami','Kabinda',-6.14,24.48,1],
+ ['Kasaï','Kasai','Tshikapa',-6.42,20.8,2],['Sankuru','Sankuru','Lodja',-3.49,23.43,1],
+ ['Mai-Ndombe','Mai-Ndombe','Inongo',-1.95,18.27,1],['Kwango','Kwango','Kenge',-4.84,16.94,1],
+ ['Sud-Ubangi','Sud-Ubangi','Gemena',3.25,19.77,1],['Nord-Ubangi','Nord-Ubangi','Gbadolite',4.28,21.0,1],
+ ['Mongala','Mongala','Lisala',2.15,21.51,1],['Bas-Uele','Lower Uele','Buta',2.8,24.73,1],
+ ['Haut-Uele','Upper Uele','Isiro',2.77,27.62,1],['Tshuapa','Tshuapa','Boende',-0.28,20.88,1]];
+const GEO2FR = Object.fromEntries(PROVS.map(p=>[p[1],p[0]]));
+const KIN_COMMUNES=['Gombe','Limete','Ngaliema','Kalamu','Lingwala','Kasa-Vubu','Bandalungwa','Masina','Ndjili','Lemba','Matete','Kintambo','Barumbu','Kinshasa','Bumbu','Makala'];
+const IMPORTERS=[];
+let PRODUCTS=[ // id, dci, forme, classe, autorisé, contrôlé
+ ['P01','Paracétamol 500 mg','Comprimé','Antalgique',1,0],['P02','Amoxicilline 500 mg','Gélule','Antibiotique',1,0],
+ ['P03','Artéméther-luméfantrine 20/120 mg','Comprimé','Antipaludique',1,0],['P04','Sels de réhydratation orale','Sachet','Gastro',1,0],
+ ['P05','Zinc 20 mg','Comprimé dispersible','Gastro',1,0],['P06','Métronidazole 250 mg','Comprimé','Anti-infectieux',1,0],
+ ['P07','Cotrimoxazole 480 mg','Comprimé','Antibiotique',1,0],['P08','Ibuprofène 200 mg','Comprimé','Anti-inflammatoire',1,0],
+ ['P09','Albendazole 400 mg','Comprimé','Antiparasitaire',1,0],['P10','Ciprofloxacine 500 mg','Comprimé','Antibiotique',1,0],
+ ['P11','Metformine 500 mg','Comprimé','Antidiabétique',1,0],['P12','Amlodipine 5 mg','Comprimé','Cardiovasculaire',1,0],
+ ['P13','Salbutamol 100 µg','Inhalateur','Respiratoire',1,0],['P14','Oxytocine 10 UI','Injectable','Santé maternelle',1,1],
+ ['P15','Diazépam 5 mg','Comprimé','Psychotrope',1,1],['P16','Tramadol 50 mg','Gélule','Antalgique opioïde',1,1],
+ ['P17','Ceftriaxone 1 g','Injectable','Antibiotique',1,0],['P18','Fer + acide folique','Comprimé','Nutrition',1,0],
+ ['P19','Insuline humaine 100 UI/ml','Injectable','Antidiabétique',1,1],['P20','Vitamine A 200 000 UI','Capsule','Nutrition',1,0],
+ ['X01','Tramadol 225 mg (non enregistré)','Comprimé','Opioïde',0,1],['X02','Sirop « Toux-Max » (lot suspect)','Sirop','Antitussif',0,0],
+ ['X03','Artésunate monothérapie orale','Comprimé','Antipaludique',0,0]];
+let PROD=new Proxy(Object.fromEntries(PRODUCTS.map(p=>[p[0],p])),{get:(t,k)=>t[k]||[k,String(k),'','',0,0]});
+let DOCTORS=[['MD01','Dr Mukendi Kabasele','Kinshasa','CNOM 11204'],['MD02','Dr Ilunga Mwamba','Haut-Katanga','CNOM 20877'],['MD03','Dr Bahati Safari','Nord-Kivu','CNOM 31550'],['MD04','Dr Lukusa Tshimanga','Kasaï-Oriental','CNOM 09922'],['MD05','Dr Mavungu Nsimba','Kongo-Central','CNOM 17766']];
+const FINES=[['Absence de pharmacien responsable',500],['Produits périmés détenus',300],['Produits non enregistrés / non autorisés',800],['Titre ou carte annuelle expirée',400],['Officine non identifiée (sans carte)',250],['Défaut de déclaration d’approvisionnement',350],['Cumul de rôles non autorisé',900],['Conditions de stockage non conformes',300]];
+const SETTINGS={minDist:500,cardFee:50,fineRate:1};
+const PLANS=[['Officine',15],['Dépôt / grossiste',60],['Importateur',250],['Prescripteur (médecin)',5],['Établissement de santé (multi-prescripteurs)',40]];
+const ROLES={
+  admin:{n:'Administrateur système',m:['home','messages','dash','map','reg','products','supply','rx','insp','signalements','titles','reports','tarifs','roles','sources','licences']},
+  dg:{n:'Directeur Général',m:['home','messages','dash','map','reg','products','supply','rx','insp','signalements','titles','reports','tarifs','roles','sources']},
+  dga:{n:'Directeur Général Adjoint',m:['home','messages','dash','map','reg','products','supply','rx','insp','signalements','titles','reports','tarifs','roles','sources']},
+  dp:{n:'Directeur provincial',m:['home','messages','dash','map','reg','products','supply','insp','signalements','titles','reports','sources']},
+  manager:{n:'Manager',m:['home','messages','dash','map','reg','products','supply','rx','insp','signalements','titles','reports','tarifs','sources','licences']},
+  insp:{n:'Inspecteur',m:['home','messages','dash','map','reg','products','insp','signalements','supply','titles']},
+  pharma:{n:'Gestionnaire d’officine',m:['home','pharma','products','supply','rx']},
+  med:{n:'Médecin',m:['home','rx','products']},
+  verif:{n:'Agent de vérification',m:['home','messages','signalements','map','products']}};
+const MODS={home:['Accueil'],messages:['Messagerie'],signalements:['Signalements'],tarifs:['Barèmes & simulateur'],dash:['Tableau de bord'],map:['Cartographie SIG'],reg:['Identification des officines'],supply:['Circuit d’approvisionnement'],rx:['Prescription électronique'],pharma:['Officine : stock & délivrance'],insp:['Inspection, PV & POS'],titles:['Titres, alertes & AMM'],reports:['Rapports'],sources:['Sources de données'],licences:['Licences mensuelles'],products:['Médicaments autorisés'],roles:['Rôles & droits']};
+
+/* ====================== Utilitaires ====================== */
+let _s=20260;const rnd=()=>{_s=(_s*1664525+1013904223)%4294967296;return _s/4294967296};
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s);
+let TODAY=new Date();
+const addDays=(d,n)=>new Date(new Date(d).getTime()+n*864e5);
+const fd=d=>new Date(d).toISOString().slice(0,10);
+const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n));
+const usd=n=>fmt(n)+' $';
+const hav=(a,b,c,d)=>{const R=6371000,t=x=>x*Math.PI/180,dl=t(c-a),dg=t(d-b);const q=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(q))};
+const hash=s=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return (h>>>0).toString(16).toUpperCase().padStart(8,'0')};
+const tag=(t,c)=>`<span class="tag t-${c}">${esc(t)}</span>`;
+function qrSvg(text,size=110){try{const q=qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:3,margin:0,scalable:true}).replace('<svg','<svg style="width:'+size+'px;height:'+size+'px"')}catch(e){return '<div class="note">QR indisponible hors ligne</div>'}}
+function openM(h){$('#mbody').innerHTML=h;$('#modal').classList.add('on')}
+function closeM(){$('#modal').classList.remove('on')}
+const docLink=(t,id)=>`/print.html?t=${t}&id=${encodeURIComponent(id)}&r=${ROLE}&u=${encodeURIComponent(USERID())}`;
+const msg=(t,k='okmsg')=>`<div class="${k}">${t}</div>`;
+
+/* ====================== Couche données (API REST → base SQL) ====================== */
+const DB={officines:[],entities:[],decl:[],rx:[],pv:[],stocks:{},amm:[],audit:[],ammSteps:['Dépôt dossier','Évaluation documentaire','Contrôle qualité / labo','Décision','Délivrée']};
+let PERSONAS=[],PID='U01',DOCID='MD01',PERMS={},RBAC={},RES_LABELS={};
+let ROLE_LABELS={admin:'Administrateur',manager:'Manager',insp:'Inspecteur',verif:'Agent de vérification',dg:'Directeur Général',dga:'Directeur Général Adjoint',dp:'Directeur provincial',pharma:'Gestionnaire d’officine',med:'Médecin',consumer:'Consommateur'};
+const can=(r,a)=>(PERMS[r]||[]).includes(a);
+const USERID=()=>ROLE==='med'?DOCID:ROLE==='pharma'?(DB.pharmaOff||''):(['insp','manager','verif','dg','dga','dp'].includes(ROLE))?PID:'';
+let SCOPE=null;
+const apiLabel=(m,u)=>({'POST /api/pv':'Nouveau procès-verbal','POST /api/rx':'Nouvelle prescription','POST /api/decl':'Déclaration d’approvisionnement','POST /api/officines':'Nouvelle officine','POST /api/officines/bulk':'Import d’officines','POST /api/stock':'Ajout de lot en stock'}[m+' '+u]||(m+' '+u.replace('/api/','')));
+async function api(m,u,b){
+  const o={role:ROLE,user:USERID(),uid:PID,label:apiLabel(m,u)};
+  if(u==='/api/rx/verify'){o.noQueue=true;o.offline=async()=>{            // vérification d'ordonnance hors ligne, à partir des données déjà chargées
+    const id=(String(b.payload).match(/RX-\d{4}-\d{6}/)||[])[0],r=DB.rx.find(x=>x.id===id);if(!r)throw Object.assign(new Error('Hors ligne : ordonnance inconnue de cet appareil'),{offline:true});
+    const p=String(b.payload).split('|');if(p.length>3&&p[3]!==r.sig)throw new Error('Signature invalide : ordonnance altérée ou falsifiée');return r}}
+  if(/\/send$|\/paylink$/.test(u))o.noQueue=true;
+  const r=await EP.api(m,u,b,o);return r}
+function updPills(){
+  const sp=$('#scopePill');if(sp){sp.style.display=ROLE==='insp'||ROLE==='manager'||ROLE==='dp'?'':'none';sp.textContent='Périmètre : '+(SCOPE||'national')}
+  const bl=$('#bell');if(bl)bl.style.display=ROLES[ROLE].m.includes('messages')?'':'none'}
+async function loadBell(){if(!ROLES[ROLE].m.includes('messages'))return;try{const M=await api('GET','/api/messages');const e=$('#bellN');if(e)e.textContent=M.unread}catch{}}
+async function refresh(){
+  const b=await api('GET','/api/bootstrap');TODAY=new Date(b.today);
+  PRODUCTS=b.products;PROD=new Proxy(Object.fromEntries(PRODUCTS.map(p=>[p[0],p])),{get:(t,k)=>t[k]||[k,String(k),'','',0,0]});DOCTORS=b.doctors;PERMS=b.perms||{};RBAC=b.rbac||{};ROLE_LABELS=b.roleLabels||ROLE_LABELS;RES_LABELS=b.resLabels||{};
+  ['officines','entities','decl','rx','pv','amm','audit'].forEach(k=>DB[k]=b[k]);SCOPE=b.scope||null;updPills();loadBell();
+  if(!DB.pharmaOff||!DB.officines.find(o=>o.id===DB.pharmaOff))DB.pharmaOff=DB.officines.find(o=>o.statut==='autorisee').id}
+async function loadStock(oid){DB.stocks[oid]=await api('GET','/api/stock/'+oid)}
+const ensureStock=oid=>DB.stocks[oid]||{};
+const fail=e=>{alert(e.message||e)};
+function formModal(title,fields,onSave){
+  openM('<h3>'+title+'</h3>'+fields.map(f=>'<label>'+f[1]+'</label>'+(f[2]==='select'?'<select id="f_'+f[0]+'">'+f[4].map(o=>'<option value="'+esc(o[0])+'" '+(String(o[0])===String(f[3])?'selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select>':f[2]==='check'?'<input type="checkbox" id="f_'+f[0]+'" '+(f[3]?'checked':'')+' style="width:auto">':'<input id="f_'+f[0]+'" type="'+(f[2]||'text')+'" value="'+esc(f[3]??'')+'" '+(f[2]==='number'?'step="any"':'')+'>')).join('')+'<div id="f_msg"></div><div style="margin-top:10px"><button id="f_ok">Enregistrer</button></div>');
+  $('#f_ok').onclick=async()=>{const v={};fields.forEach(f=>{const e=$('#f_'+f[0]);v[f[0]]=f[2]==='check'?e.checked:f[2]==='number'?(e.value===''?undefined:+e.value):e.value});
+    try{await onSave(v);await refresh();closeM();go()}catch(e){$('#f_msg').innerHTML=msg(esc(e.message),'err')}}}
+async function delRec(res,id,label,path){if(!confirm('Supprimer définitivement '+label+' ('+id+') ? Cette action est irréversible.'))return;try{await api('DELETE',path||('/api/'+res+'/'+encodeURIComponent(id)));await refresh();go()}catch(e){fail(e)}}
+function editOff(id){const o=DB.officines.find(x=>x.id===id);formModal('Modifier l’officine '+id,[['nom','Nom','text',o.nom],['pharmacien','Pharmacien responsable','text',o.pharmacien],['prov','Province','select',o.prov,PROVS.map(p=>[p[0],p[0]])],['entite','Entité','text',o.entite],['lat','Latitude','number',o.lat],['lon','Longitude','number',o.lon],['statut','Statut','select',o.statut,Object.keys(statLbl).map(k=>[k,statLbl[k][0]])]],v=>api('PATCH','/api/officines/'+id,v))}
+function editRx(id){const r=DB.rx.find(x=>x.id===id);formModal('Modifier l’ordonnance '+id,[['patient','Patient','text',r.patient],['age','Âge','number',r.age],['patient_phone','Téléphone du patient','text',r.patient_phone],['patient_email','E-mail du patient','text',r.patient_email]],v=>api('PATCH','/api/rx/'+id,v))}
+function editDecl(id){const d=DB.decl.find(x=>x.id===id);formModal('Modifier la déclaration '+id,[['lot','Lot','text',d.lot],['sent','Quantité expédiée','number',d.sent],['rec','Quantité reçue (vide = non réceptionnée)','number',d.rec]],v=>api('PATCH','/api/decl/'+id,{lot:v.lot,sent:v.sent,rec:v.rec===undefined?null:v.rec}))}
+function editPv(id){const p=DB.pv.find(x=>x.id===id);formModal('Modifier le PV '+id,[['obs','Observations','text',p.obs]],v=>api('PATCH','/api/pv/'+id,v))}
+function stockForm(){if(!can('stock','C'))return '';return '<div class="row" style="margin:6px 0"><div><select id="sf_p">'+PRODUCTS.filter(p=>p[4]).map(p=>'<option value="'+p[0]+'">'+esc(p[1])+'</option>').join('')+'</select></div><div style="flex:0;min-width:90px"><input id="sf_l" placeholder="Lot"></div><div style="flex:0;min-width:130px"><input id="sf_e" type="date"></div><div style="flex:0;min-width:70px"><input id="sf_q" type="number" placeholder="Qté"></div><div style="flex:0"><button id="sf_ok">+ Lot</button></div></div><div id="sf_m"></div>'}
+const lotCtl=(pid,l)=>(can('stock','U')?' <a href="#" data-se="'+pid+'|'+esc(l.lot)+'|'+l.qty+'|'+l.exp+'">✎</a>':'')+(can('stock','D')?' <a href="#" data-sd="'+pid+'|'+esc(l.lot)+'">✕</a>':'');
+function bindStock(oid){
+  const rl=async()=>{await vPharma($('#view'))};
+  const b=$('#sf_ok');if(b)b.onclick=async()=>{try{await api('POST','/api/stock',{officine_id:oid,product_id:$('#sf_p').value,lot:$('#sf_l').value.trim(),exp:$('#sf_e').value,qty:+$('#sf_q').value});await rl()}catch(e){$('#sf_m').innerHTML=msg(esc(e.message),'err')}};
+  document.querySelectorAll('[data-se]').forEach(a=>a.onclick=ev=>{ev.preventDefault();const [pid,lot,qty,exp]=a.dataset.se.split('|');formModal('Modifier le lot '+lot,[['qty','Quantité','number',+qty],['exp','Péremption','date',exp]],v=>api('PATCH','/api/stock/'+oid+'/'+pid+'/'+encodeURIComponent(lot),v))});
+  document.querySelectorAll('[data-sd]').forEach(a=>a.onclick=async ev=>{ev.preventDefault();const [pid,lot]=a.dataset.sd.split('|');if(!confirm('Retirer le lot '+lot+' du stock ?'))return;try{await api('DELETE','/api/stock/'+oid+'/'+pid+'/'+encodeURIComponent(lot));await rl()}catch(e){fail(e)}})}
+
+/* ====================== Navigation ====================== */
+let ROLE='admin',CUR='home';
+const NAV={stack:[],i:-1,silent:false};
+function buildRole(){
+  if(!PERSONAS.length){$('#role').innerHTML=Object.entries(ROLES).map(([k,v])=>'<option value="'+k+'">'+esc(v.n)+'</option>').join('');return}
+  const g={};PERSONAS.filter(p=>p.role!=='consumer').forEach(p=>(g[p.role]=g[p.role]||[]).push(p));
+  $('#role').innerHTML=Object.keys(g).map(r=>'<optgroup label="'+esc(ROLE_LABELS[r]||r)+'">'+g[r].map(p=>'<option value="'+p.id+'">'+esc(p.nom)+' — '+esc(p.titre)+'</option>').join('')+'</optgroup>').join('');
+  $('#role').value=PID}
+function buildNav(){
+  $('#nav').innerHTML=ROLES[ROLE].m.map(k=>`<a href="#${k}" class="${k===CUR?'on':''}"><span class="dot"></span>${MODS[k][0]}</a>`).join('')+
+  `<h6>Plateforme</h6><div class="note" style="margin:6px 8px">Version démonstration — données simulées stockées dans la base SQL du serveur. Aucune entité réelle.</div>`;
+}
+$('#role').onchange=async e=>{
+  const p=PERSONAS.find(x=>x.id===e.target.value);if(!p)return;PID=p.id;ROLE=p.role;if(ROLE==='med')DOCID=p.ref;if(ROLE==='pharma')DB.pharmaOff=p.ref;
+  try{await refresh()}catch(er){fail(er)}
+  if(ROLE==='pharma')DB.pharmaOff=p.ref;
+  if(!ROLES[ROLE].m.includes(CUR))CUR='home';NAV.stack=[CUR];NAV.i=0;NAV.silent=location.hash.slice(1)!==CUR;location.hash=CUR;go()};
+$('#menuBtn').onclick=()=>$('#nav').classList.toggle('open');
+function navTo(m,o={}){
+  if(!MODS[m]||!ROLES[ROLE].m.includes(m))m='home';
+  if(o.push!==false&&NAV.stack[NAV.i]!==m){NAV.stack=NAV.stack.slice(0,NAV.i+1);NAV.stack.push(m);NAV.i=NAV.stack.length-1}
+  CUR=m;if(location.hash.slice(1)!==m){NAV.silent=true;location.hash=m}go()}
+window.addEventListener('hashchange',()=>{if(NAV.silent){NAV.silent=false;return}navTo(location.hash.slice(1))});
+function navBack(){if(NAV.i>0){NAV.i--;navTo(NAV.stack[NAV.i],{push:false})}}
+function navFwd(){if(NAV.i<NAV.stack.length-1){NAV.i++;navTo(NAV.stack[NAV.i],{push:false})}}
+function updCrumbs(){
+  const b=$('#navBack'),f=$('#navFwd');if(b)b.disabled=NAV.i<=0;if(f)f.disabled=NAV.i>=NAV.stack.length-1;
+  const c=$('#crumbs');if(!c)return;
+  c.innerHTML=CUR==='home'?'':'<button class="alt sm" id="cBack">← Retour</button><button class="alt sm" id="cHome">🏠 Accueil</button><span>Accueil › <b style="color:var(--ink)">'+esc(MODS[CUR][0])+'</b></span>';
+  const cb=$('#cBack'),ch=$('#cHome');if(cb)cb.onclick=()=>NAV.i>0?navBack():navTo('home');if(ch)ch.onclick=()=>navTo('home')}
+$('#navBack').onclick=navBack;$('#navFwd').onclick=navFwd;$('#navHome').onclick=()=>navTo('home');
+$('#bell').onclick=()=>navTo('messages');
+function go(){
+  if(window._impT){clearInterval(window._impT);window._impT=null}
+  if(window._map){window._map.remove();window._map=null}
+  buildNav();$('#nav').classList.remove('open');
+  const v=$('#view');v.innerHTML='';
+  ({dash:vDash,map:vMap,reg:vReg,supply:vSupply,rx:vRx,pharma:vPharma,insp:vInsp,titles:vTitles,reports:vReports,sources:vSources,licences:vLic,products:vProducts,roles:vRoles,home:vHome,messages:vMessages,signalements:vSignalements,tarifs:vTarifs,imports:vImports})[CUR](v);updCrumbs();
+  window.scrollTo(0,0);
+}
+const head=(t,s)=>`<h1>${t}</h1><div class="sub">${s}</div>`;
+const statLbl={autorisee:['Autorisée','ok'],renouvellement:['À renouveler','warn'],expiree:['Carte expirée','bad'],en_attente:['En attente d’identification','info'],clandestine:['Non autorisée (signalée)','bad']};
+const stCol={autorisee:'#0E8A45',renouvellement:'#F7D618',expiree:'#CE1021',en_attente:'#007FFF',clandestine:'#222'};
+
+/* ====================== Tableau de bord ====================== */
+function bars(rows,col='var(--rdc-blue)'){const m=Math.max(...rows.map(r=>r[1]),1);return rows.map(r=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><div style="width:110px;font-size:12px">${esc(r[0])}</div><div class="bar" style="width:${r[1]/m*100}%;min-width:2px;background:${col}"></div><b style="font-size:12px">${fmt(r[1])}</b></div>`).join('')}
+function donut(parts){const t=parts.reduce((a,p)=>a+p[1],0)||1;let a=0;const R=48,C=2*Math.PI*R;
+  const arcs=parts.map(p=>{const l=p[1]/t*C;const s=`<circle r="${R}" cx="60" cy="60" fill="none" stroke="${p[2]}" stroke-width="22" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-a}" transform="rotate(-90 60 60)"/>`;a+=l;return s}).join('');
+  return `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><svg width="120" height="120" viewBox="0 0 120 120">${arcs}<text x="60" y="65" text-anchor="middle" font-size="18" font-weight="700">${t}</text></svg><div class="legend">${parts.map(p=>`<div><i style="background:${p[2]}"></i>${esc(p[0])} — <b>${p[1]}</b></div>`).join('')}</div></div>`}
+function conflicts(){
+  const L=DB.officines.filter(o=>o.statut!=='clandestine'),out=[];
+  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const d=hav(L[i].lat,L[i].lon,L[j].lat,L[j].lon);if(d<SETTINGS.minDist)out.push([L[i],L[j],d])}
+  return out}
+function alertsList(){
+  const a=[];
+  DB.officines.forEach(o=>{if(o.expiration){const d=Math.round((new Date(o.expiration)-TODAY)/864e5);
+    if(d<0)a.push([o.nom+' — carte expirée depuis '+(-d)+' j','bad','reg']);else if(d<=45)a.push([o.nom+' — renouvellement dans '+d+' j','warn','reg'])}});
+  DB.decl.forEach(d=>{if(d.rec===null&&(TODAY-new Date(d.date))/864e5>7)a.push([d.id+' — expédition non réceptionnée ('+d.to+')','bad','supply']);
+    else if(d.rec!==null&&d.rec!==d.sent)a.push([d.id+' — écart expédié/reçu : '+(d.sent-d.rec)+' unités','warn','supply'])});
+  return a}
+function vDash(v){
+  const O=DB.officines,c=k=>O.filter(o=>o.statut===k).length;
+  const ident=O.filter(o=>o.statut==='autorisee'||o.statut==='renouvellement').length;
+  const rec=O.filter(o=>o.carte).length*SETTINGS.cardFee;
+  const byP=Object.entries(O.reduce((a,o)=>(a[o.prov]=(a[o.prov]||0)+1,a),{})).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const al=alertsList();
+  v.innerHTML=head('Tableau de bord national','Vue consolidée du réseau officinal, du circuit d’approvisionnement et de la prescription électronique.')+
+  `<div class="grid g4">
+    <div class="card kpi g"><div class="v">${O.length}</div><div class="l">Officines enregistrées dans le registre</div></div>
+    <div class="card kpi"><div class="v">${ident}</div><div class="l">Identifiées avec carte valide ou à renouveler</div></div>
+    <div class="card kpi y"><div class="v">${c('expiree')+c('en_attente')}</div><div class="l">À régulariser (carte expirée / en attente)</div></div>
+    <div class="card kpi r"><div class="v">${c('clandestine')}</div><div class="l">Officines non autorisées signalées</div></div>
+    <div class="card kpi"><div class="v">${usd(rec)}</div><div class="l">Recettes cartes annuelles (démo)</div></div>
+    <div class="card kpi g"><div class="v">${DB.rx.length}</div><div class="l">Prescriptions électroniques émises</div></div>
+    <div class="card kpi y"><div class="v">${DB.decl.length}</div><div class="l">Déclarations d’approvisionnement</div></div>
+    <div class="card kpi r"><div class="v">${conflicts().length}</div><div class="l">Conflits de distance d’implantation (&lt; ${SETTINGS.minDist} m)</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Officines par province (top 10)</h3>${bars(byP)}</div>
+    <div class="card"><h3>Statut d’identification</h3>${donut(Object.keys(statLbl).map(k=>[statLbl[k][0],c(k),stCol[k]]))}</div>
+    <div class="card"><h3>Alertes prioritaires (${al.length})</h3><div class="scroll" style="max-height:260px"><table>${al.slice(0,25).map(x=>`<tr><td>${tag(x[1]==='bad'?'Urgent':'À suivre',x[1])}</td><td>${esc(x[0])}</td><td><a href="#${x[2]}">ouvrir</a></td></tr>`).join('')}</table></div></div>
+    <div class="card"><h3>Journal d’activité</h3>${DB.audit.length?`<table>${DB.audit.slice(-8).reverse().map(a=>`<tr><td>${esc(a[0])}</td><td>${esc(a[1])}</td></tr>`).join('')}</table>`:'<div class="sub">Les actions effectuées pendant la session apparaîtront ici (émission de carte, prescription, délivrance, PV…).</div>'}</div>
+  </div>`;
+}
+const log=()=>{};
+
+/* ====================== Cartographie SIG ====================== */
+let MAPST={layers:{prov:true,city:true,off:true,conf:false},st:'',sel:null};
+function geoStats(prov,key){
+  const inCity=o=>!key||(prov==='Kinshasa'?o.entite===key:o.ville===key);
+  const O=DB.officines.filter(o=>(!prov||o.prov===prov)&&inCity(o));
+  const E=DB.entities.filter(e=>(!prov||e.prov===prov)&&(!key||prov==='Kinshasa'||e.ville===key));
+  const offIds=new Set(O.map(o=>o.id));
+  const dep=E.filter(e=>e.autorises.includes('grossiste')),imp=E.filter(e=>e.autorises.includes('importateur')),cum=E.filter(e=>e.reels.length>1);
+  const D=DB.decl.filter(d=>offIds.has(d.toId));
+  const P=DB.pv.filter(p=>(!prov||p.prov===prov)&&(!key||offIds.has(p.offId)));
+  const A=key?[]:DB.amm.filter(a=>!prov||a.prov===prov);
+  const by=k=>O.filter(o=>o.statut===k).length;
+  return{O,total:O.length,autorisee:by('autorisee'),renouv:by('renouvellement'),expiree:by('expiree'),attente:by('en_attente'),clandestine:by('clandestine'),conf:O.length?Math.round(by('autorisee')/O.length*100):0,
+    dep,imp,cum,decl:D.length,ecart:D.filter(d=>d.rec===null||d.rec!==d.sent).length,pv:P.length,pvTot:P.reduce((a,p)=>a+p.total,0),pvPaye:P.filter(p=>p.paid).reduce((a,p)=>a+p.total,0),
+    amm:A,ammOpen:A.filter(a=>a.etape<4).length,ammLate:A.filter(ammLate).length,ammExp:A.filter(a=>{const e=ammExp(a);return e!==null&&e<=90}).length}}
+function geoTip(name,s){return '<b>'+esc(name)+'</b><br>'+s.total+' officines · '+s.conf+' % à jour<br>'+s.dep.length+' dépôts · '+s.imp.length+' importateurs'+(s.clandestine?'<br><span style="color:#CE1021">'+s.clandestine+' non autorisée(s)</span>':'')}
+function geoPanel(sel){
+  const prov=sel?sel.prov:null,key=sel?sel.key:null,s=geoStats(prov,key);
+  const title=sel?(key?key+' ('+prov+')':prov):'République démocratique du Congo';
+  const kv=(b,l,c)=>'<div><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b><small>'+l+'</small></div>';
+  return '<div class="card gp"><h3>'+esc(title)+'</h3><div class="sub">'+(key?'Ville / entité':sel?'Province':'Vue nationale'+(SCOPE?' (votre périmètre : '+esc(SCOPE)+')':''))+'</div>'+
+  '<div class="kv">'+kv(s.total,'Officines')+kv(s.conf+' %','Cartes à jour')+kv(s.dep.length,'Dépôts pharmaceutiques')+kv(s.imp.length,'Importateurs')+kv(s.clandestine,'Non autorisées','#CE1021')+kv(s.cum.length,'Cumuls de rôles','#C98A00')+'</div>'+
+  '<b style="font-size:12px;color:#5B6B62">Statut des officines</b>'+bars([['À jour',s.autorisee],['À renouveler',s.renouv],['Expirées',s.expiree],['En attente',s.attente],['Non autorisées',s.clandestine]],'var(--ac-green)')+
+  '<div class="kv" style="margin-top:10px">'+kv(s.decl,'Approvisionnements')+kv(s.ecart,'Écarts / non reçus','#C98A00')+kv(s.pv,'PV émis')+kv(usd(s.pvPaye)+' / '+usd(s.pvTot),'Amendes perçues / dues')+(key?'':kv(s.ammOpen,'Dossiers en cours')+kv(s.ammLate,'Dossiers hors délai','#CE1021'))+'</div>'+
+  (s.dep.length?'<b style="font-size:12px;color:#5B6B62">Dépôts pharmaceutiques</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.dep.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.dep.length>6?' …':'')+'</div>':'')+
+  (s.imp.length?'<b style="font-size:12px;color:#5B6B62">Importateurs</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.imp.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.imp.length>6?' … (+'+(s.imp.length-6)+')':'')+'</div>':'')+
+  (s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).length?'<b style="font-size:12px;color:#5B6B62">À régulariser en priorité</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).map(o=>esc(o.nom)+' <small>('+statLbl[o.statut][0]+')</small>').join('<br>')+'</div>':'')+
+  '<div class="row noprint" style="margin-top:8px">'+(can('officines','R')?'<button class="sm" id="gpReg">Ouvrir le registre'+(sel?' filtré':'')+'</button>':'')+(sel?'<button class="sm alt" id="gpAll">Vue nationale</button>':'')+'</div></div>'}
+function vMap(v){
+  v.innerHTML=head('Carte interactive des officines','Survolez une province ou une ville pour un aperçu ; cliquez pour afficher les statistiques (officines, dépôts, importateurs, dossiers, PV).')+
+  '<div class="maplay2"><div class="card"><h3>Couches & filtres</h3>'+
+  '<label><input type="checkbox" id="lyP" '+(MAPST.layers.prov?'checked':'')+'> Provinces (densité)</label><label><input type="checkbox" id="lyV" '+(MAPST.layers.city?'checked':'')+'> Villes / communes</label><label><input type="checkbox" id="lyO" '+(MAPST.layers.off?'checked':'')+'> Officines</label><label><input type="checkbox" id="lyC" '+(MAPST.layers.conf?'checked':'')+'> Conflits de distance</label>'+
+  '<label>Province</label><select id="fProv" style="width:100%"><option value="">Toutes</option>'+PROVS.map(p=>'<option>'+p[0]+'</option>').join('')+'</select>'+
+  '<label>Statut</label><select id="fSt" style="width:100%"><option value="">Tous</option>'+Object.keys(statLbl).map(k=>'<option value="'+k+'">'+statLbl[k][0]+'</option>').join('')+'</select>'+
+  '<button id="myLoc" class="alt" style="width:100%;margin:8px 0 2px">📍 Ma position</button><div class="note" id="myLocMsg" style="display:none"></div><label>Distance minimale légale (m)</label><input type="number" id="fDist" value="'+SETTINGS.minDist+'" style="width:100%"><div class="note">Seuil paramétrable, à valider juridiquement.</div>'+
+  '<div class="legend" style="margin-top:8px">'+Object.keys(statLbl).map(k=>'<div><i style="background:'+stCol[k]+'"></i>'+statLbl[k][0]+'</div>').join('')+'<div><i style="background:#fff;border:2px solid #007FFF"></i>Ville / commune</div></div></div>'+
+  '<div><div id="map" style="height:620px"></div></div><div id="gpanel"></div></div>';
+  const m=L.map('map').setView([-2.9,23.5],5);window._map=m;
+  epTileLayer().addTo(m);
+  const gP=L.layerGroup(),gV=L.layerGroup(),gO=L.layerGroup(),gC=L.layerGroup();let geo=null;
+  const provStats={};PROVS.forEach(p=>provStats[p[0]]=geoStats(p[0]));
+  const mx=Math.max(1,...Object.values(provStats).map(s=>s.total));
+  const col=n=>n>=mx*.5?'#0A4F29':n>=mx*.15?'#2E9B5E':n>=5?'#8FCFA8':'#DDF1E4';
+  const showPanel=()=>{const el=$('#gpanel');el.innerHTML=geoPanel(MAPST.sel);
+    const r=$('#gpReg');if(r)r.onclick=()=>{REGF.prov=MAPST.sel?MAPST.sel.prov:'';navTo('reg')};
+    const a=$('#gpAll');if(a)a.onclick=()=>{MAPST.sel=null;$('#fProv').value='';draw();m.setView([-2.9,23.5],5);showPanel()}};
+  const select=(prov,key,latlon)=>{MAPST.sel={prov,key};$('#fProv').value=prov;showPanel();draw();if(latlon)m.setView(latlon,key?13:(prov==='Kinshasa'?11:8))};
+  function draw(){
+    gP.clearLayers();gV.clearLayers();gO.clearLayers();gC.clearLayers();
+    geo=L.geoJSON(PROV_GEO,{style:f=>{const fr=GEO2FR[f.properties.name],n=(provStats[fr]||{}).total||0,sel=MAPST.sel&&MAPST.sel.prov===fr;return{color:sel?'#007FFF':'#CE1021',weight:sel?3:1.2,fillColor:col(n),fillOpacity:.55}},
+      onEachFeature:(f,l)=>{const fr=GEO2FR[f.properties.name]||f.properties.name,s=provStats[fr]||geoStats(fr);
+        l.bindTooltip(geoTip(fr,s),{sticky:true,className:'gtip'});
+        l.on({mouseover:e=>{e.target.setStyle({weight:3,fillOpacity:.8});e.target.bringToFront()},mouseout:e=>geo.resetStyle(e.target),click:()=>{const p=PROVS.find(x=>x[0]===fr);select(fr,null,p?[p[3],p[4]]:null)}})}}).addTo(gP);
+    // villes (chefs-lieux) et communes de Kinshasa : regroupement des officines
+    const groups={};DB.officines.forEach(o=>{const key=o.prov==='Kinshasa'?o.entite:o.ville;const g=groups[o.prov+'|'+key]=groups[o.prov+'|'+key]||{prov:o.prov,key,lat:0,lon:0,n:0};g.lat+=o.lat;g.lon+=o.lon;g.n++});
+    Object.values(groups).filter(g=>!MAPST.sel||g.prov===MAPST.sel.prov).forEach(g=>{const s=geoStats(g.prov,g.key),ll=[g.lat/g.n,g.lon/g.n];
+      const c=L.circleMarker(ll,{radius:5+Math.sqrt(g.n)*2.2,color:'#007FFF',weight:2,fillColor:'#fff',fillOpacity:.85});
+      c.bindTooltip(geoTip(g.key+' ('+g.prov+')',s),{className:'gtip'});c.on('click',()=>select(g.prov,g.key,ll));gV.addLayer(c)});
+    const list=DB.officines.filter(o=>(!MAPST.sel||o.prov===MAPST.sel.prov)&&(!MAPST.sel||!MAPST.sel.key||(o.prov==='Kinshasa'?o.entite===MAPST.sel.key:o.ville===MAPST.sel.key))&&(!MAPST.st||o.statut===MAPST.st));
+    list.forEach(o=>{const mk=L.circleMarker([o.lat,o.lon],{radius:6,color:'#fff',weight:1.5,fillColor:stCol[o.statut],fillOpacity:1});
+      mk.bindTooltip(esc(o.nom)+' — '+statLbl[o.statut][0]);
+      mk.bindPopup('<b>'+esc(o.nom)+'</b><br>'+esc(o.id)+' · '+esc(o.prov)+' / '+esc(o.entite)+'<br>'+esc(o.pharmacien)+'<br>Statut : <b>'+statLbl[o.statut][0]+'</b><br>Carte : '+(o.carte?esc(o.carte)+' (exp. '+o.expiration+')':'—')+'<br>Dernière visite : '+o.visite);gO.addLayer(mk)});
+    conflicts().filter(c=>!MAPST.sel||c[0].prov===MAPST.sel.prov).forEach(c=>{[c[0],c[1]].forEach(o=>L.circle([o.lat,o.lon],{radius:SETTINGS.minDist/2,color:'#CE1021',weight:1.5,dashArray:'4 4',fill:false}).addTo(gC));
+      L.polyline([[c[0].lat,c[0].lon],[c[1].lat,c[1].lon]],{color:'#CE1021',weight:2}).bindTooltip(Math.round(c[2])+' m — '+esc(c[0].nom)+' / '+esc(c[1].nom)).addTo(gC)});
+    [[gP,'prov'],[gV,'city'],[gO,'off'],[gC,'conf']].forEach(([g,k])=>{if(MAPST.layers[k]){if(!m.hasLayer(g))g.addTo(m)}else m.removeLayer(g)});
+    gV.eachLayer(l=>l.bringToFront&&l.bringToFront());gO.eachLayer(l=>l.bringToFront&&l.bringToFront())}
+  draw();showPanel();
+  $('#lyP').onchange=e=>{MAPST.layers.prov=e.target.checked;draw()};$('#lyV').onchange=e=>{MAPST.layers.city=e.target.checked;draw()};$('#lyO').onchange=e=>{MAPST.layers.off=e.target.checked;draw()};$('#lyC').onchange=e=>{MAPST.layers.conf=e.target.checked;draw()};
+  $('#fProv').value=MAPST.sel?MAPST.sel.prov:'';$('#fSt').value=MAPST.st;
+  $('#fProv').onchange=e=>{const p=PROVS.find(x=>x[0]===e.target.value);if(p)select(p[0],null,[p[3],p[4]]);else{MAPST.sel=null;draw();showPanel();m.setView([-2.9,23.5],5)}};
+  $('#fSt').onchange=e=>{MAPST.st=e.target.value;draw()};
+  $('#fDist').onchange=e=>{SETTINGS.minDist=Math.max(50,+e.target.value||500);draw()};
+  let meMk=null;
+  $('#myLoc').onclick=()=>{const msg=$('#myLocMsg');msg.style.display='';msg.textContent='Localisation…';
+    if(!navigator.geolocation){msg.textContent='Géolocalisation indisponible sur cet appareil.';return}
+    navigator.geolocation.getCurrentPosition(p=>{const la=p.coords.latitude,lo=p.coords.longitude,d=geoDetect(la,lo);if(meMk)meMk.remove();
+      meMk=L.circleMarker([la,lo],{radius:9,color:'#fff',weight:2,fillColor:'#007FFF',fillOpacity:1}).addTo(m).bindTooltip('Vous êtes ici');
+      msg.textContent='Position détectée : '+(d.prov||'hors des provinces connues')+(d.entite?' / '+d.entite:'');
+      if(d.prov){const pp=PROVS.find(x=>x[0]===d.prov);if(pp){select(d.prov,null,[la,lo]);m.setView([la,lo],12)}}else m.setView([la,lo],10)},
+      ()=>{msg.textContent='Position refusée ou indisponible : autorisez la localisation dans le navigateur.'},{enableHighAccuracy:true,timeout:12000})};
+  setTimeout(()=>m.invalidateSize(),100);
+}
+
+/* ====================== Identification des officines ====================== */
+let REGF={q:'',st:'',prov:'',sts:null};
+function vReg(v){
+  const canEdit=can('officines','C');
+  v.innerHTML=head('Identification des officines','Registre national, carte spécifique renouvelable annuellement (QR vérifiable), import en masse depuis les fichiers existants.')+
+  `<div class="card"><div class="row"><div><label>Recherche</label><input id="q" placeholder="Nom, pharmacien, n° carte, province…" value="${esc(REGF.q)}"></div>
+   <div><label>Statut</label><select id="fs"><option value="">Tous</option>${Object.keys(statLbl).map(k=>`<option value="${k}">${statLbl[k][0]}</option>`).join('')}</select></div>
+   ${canEdit?`<div style="flex:0"><button id="addB">+ Nouvelle officine</button></div><div style="flex:0"><button class="alt" id="impB">Importer CSV</button></div>`:''}
+   <div style="flex:0"><button class="alt" id="expB">Exporter CSV</button></div></div>
+   <div id="regOut"></div></div>
+  <div class="card"><h3>Dépôts pharmaceutiques et importateurs</h3><div class="sub">Agrément et certificat de chaque dépôt ou importateur de la liste officielle.</div><div class="row"><div><label>Recherche</label><input id="qe" placeholder="Nom, secteur, province…"></div></div><div id="entOut"></div></div>`;
+  $('#fs').value=REGF.st;
+  const drawE=()=>{const qq=($('#qe').value||'').toLowerCase();const L=DB.entities.filter(e=>!qq||(e.nom+(e.secteur||'')+(e.prov||'')).toLowerCase().includes(qq));
+    $('#entOut').innerHTML=`<div class="sub" style="margin-top:8px">${L.length} établissement(s)${L.length>60?' — 60 premiers affichés':''}</div><div class="scroll"><table><tr><th>Établissement</th><th>Catégorie</th><th>Province</th><th></th></tr>${L.slice(0,60).map(e=>`<tr><td>${esc(e.nom)}</td><td>${e.autorises.includes('importateur')?'Importateur':'Dépôt pharmaceutique'}</td><td>${esc(e.prov||'—')}</td><td><button class="sm" data-ce="${e.id}">📜 Certificat</button></td></tr>`).join('')}</table></div>`;
+    document.querySelectorAll('[data-ce]').forEach(b=>b.onclick=()=>certModal(b.dataset.ce))};
+  $('#qe').oninput=drawE;drawE();
+  const draw=()=>{const q=REGF.q.toLowerCase();
+    const L=DB.officines.filter(o=>(!REGF.st||o.statut===REGF.st)&&(!REGF.sts||REGF.sts.includes(o.statut))&&(!REGF.prov||o.prov===REGF.prov)&&(!q||(o.nom+o.pharmacien+(o.carte||'')+o.prov+o.entite+o.id).toLowerCase().includes(q)));
+    $('#regOut').innerHTML=`<div class="sub" style="margin-top:8px">${L.length} résultat(s) ${REGF.prov?`<span class="tag t-info">Province : ${esc(REGF.prov)}</span> <a href="#" onclick="REGF.prov='';go();return false">effacer le filtre</a>`:''} ${REGF.sts?`<span class="tag t-info">Statuts : ${REGF.sts.map(k=>esc(statLbl[k]?statLbl[k][0]:k)).join(' + ')}</span> <a href="#" onclick="REGF.sts=null;go();return false">effacer le filtre</a>`:''}</div><div class="scroll"><table><tr><th>ID</th><th>Officine</th><th>Province / entité</th><th>Pharmacien</th><th>Statut</th><th>Carte</th><th>Expire</th><th></th></tr>${L.slice(0,120).map(o=>`<tr><td>${o.id}</td><td>${esc(o.nom)}</td><td>${esc(o.prov)}<br><small>${esc(o.entite)}</small></td><td>${esc(o.pharmacien)}</td><td>${tag(statLbl[o.statut][0],statLbl[o.statut][1])}</td><td>${o.carte||'—'}</td><td>${o.expiration||'—'}</td><td>${can('officines','card')?`<button class="sm" data-i="${o.id}">${o.carte?'Renouveler':'Émettre carte'}</button> `:''}${o.carte?`<button class="sm alt" data-v="${o.id}">Voir</button> <button class="sm" data-c="${o.id}" title="Certificat d’agrément">📜 Certificat</button> `:''}${can('officines','U')?`<button class="sm alt" data-e="${o.id}">Modifier</button> `:''}${can('officines','D')?`<button class="sm red" data-d="${o.id}">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>`;
+    document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>issueCard(b.dataset.i,draw));
+    document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>showCard(b.dataset.v));
+    document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>certModal(b.dataset.c));
+    document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>editOff(b.dataset.e));document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>delRec('officines',b.dataset.d,'cette officine'));
+  };
+  $('#q').oninput=e=>{REGF.q=e.target.value;draw()};$('#fs').onchange=e=>{REGF.st=e.target.value;REGF.sts=null;draw()};
+  draw();
+  $('#expB')&&($('#expB').onclick=()=>dl('officines.csv',toCSV(DB.officines,['id','nom','prov','entite','pharmacien','statut','carte','emission','expiration','lat','lon'])));
+  if(canEdit){$('#addB').onclick=addOffForm;$('#impB').onclick=importForm}
+}
+async function issueCard(id,cb){
+  try{await api('POST','/api/officines/'+id+'/card');await refresh();cb&&cb();showCard(id)}catch(e){fail(e)}
+}
+function showCard(id){
+  const o=DB.officines.find(x=>x.id===id);
+  const payload=`EPHARMA|OFF|${o.id}|${o.carte}|${o.expiration}|${hash(o.id+o.carte+o.expiration)}`;
+  openM(`<div class="idcard"><div class="top"><span>⚕ E-Pharma</span><span style="margin-left:auto;font-size:12px">Carte d’officine</span></div><div class="stripe"></div>
+  <div class="bd"><dl><dt>Avenue</dt><dd>'+esc(x.avenue||'—')+'</dd><dt>Affecté à</dt><dd>'+esc((PERSONAS.find(p=>p.id===x.assigned_to)||{}).nom||'—')+'</dd><dt>Officine</dt><dd>${esc(o.nom)}</dd><dt>Pharmacien responsable</dt><dd>${esc(o.pharmacien)}</dd><dt>Localisation</dt><dd>${esc(o.prov)} — ${esc(o.entite)}</dd><dt>N° carte</dt><dd>${o.carte}</dd><dt>Émise / expire</dt><dd>${o.emission} → ${o.expiration}</dd></dl>${qrSvg(payload,110)}</div>
+  <div style="padding:0 12px 10px;font-size:11px;color:#5B6B62">Scannez le QR pour vérifier la validité sur E-Pharma. Carte renouvelable chaque année. ${esc(payload.slice(-8))}</div></div>`);
+}
+function resizePhoto(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const W=300,H=400,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);
+    const s=Math.max(W/im.width,H/im.height),w=im.width*s,h=im.height*s;x.drawImage(im,(W-w)/2,(H-h)/2,w,h);cb(c.toDataURL('image/jpeg',.85))};im.onerror=()=>alert('Image illisible');im.src=r.result};r.readAsDataURL(file)}
+async function certModal(id){
+  let c;try{c=await api('GET','/api/certificats/'+encodeURIComponent(id))}catch(e){return fail(e)}
+  const ed=can('officines','card'),stc={valide:'ok',expire:'bad',suspendu:'warn',non_agree:'info'}[c.statut]||'info';
+  openM(`<h3>Certificat d’agrément</h3><div class="sub">${esc(c.nom)} · ${esc(c.numero)}</div>
+   <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0">
+    <div style="width:96px;height:128px;border:1px solid var(--line);background:#F2F6F3;display:grid;place-items:center;overflow:hidden;font-size:11px;color:#5B6B62;text-align:center" id="cPh">${c.photo_url?'<img style="width:100%;height:100%;object-fit:cover" src="'+(window.API_BASE||'')+c.photo_url+'">':'Photo du pharmacien non fournie'}</div>
+    <div style="flex:1;min-width:230px"><div>${tag(c.categorie_label,'info')} ${tag(c.statut_label,stc)}</div>
+     <div style="margin-top:6px"><b>Pharmacien responsable :</b> ${esc(c.responsable||'—')}<br><b>N° d’Ordre :</b> ${esc(c.ordre_no||'—')}<br><b>Délivré le :</b> ${c.emission||'—'} · <b>Valable jusqu’au :</b> ${c.expiration||'—'}${c.motif?'<br><b>Motif :</b> '+esc(c.motif):''}</div>
+     ${c.reason?'<div class="note" style="margin-top:8px">'+esc(c.reason)+'</div>':''}</div></div>
+   ${ed?`<details open><summary><b>Informations du certificat</b></summary>
+    <div class="row"><div><label>Catégorie (exigence réglementaire)</label><select id="ce_cat">${Object.entries(c.categories).map(([k,v])=>'<option value="'+k+'"'+(k===c.categorie?' selected':'')+'>'+esc(v)+'</option>').join('')}</select></div>
+     <div><label>Pharmacien responsable</label><input id="ce_resp" value="${esc(c.responsable)}"></div></div>
+    <div class="row"><div><label>N° d’inscription à l’Ordre des pharmaciens</label><input id="ce_ordre" value="${esc(c.ordre_no)}"></div><div><label>Adresse</label><input id="ce_addr" value="${esc(c.adresse)}"></div></div>
+    <label>Photo du pharmacien responsable (portrait, JPEG/PNG)</label><input type="file" id="ce_photo" accept="image/*">
+    <div class="row"><div style="flex:0;white-space:nowrap"><label><input type="checkbox" id="ce_susp" ${c.statut==='suspendu'?'checked':''}> Suspendre l’agrément</label></div><div><input id="ce_motif" placeholder="Motif de suspension" value="${esc(c.motif)}"></div></div></details>`:''}
+   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    ${ed?'<button id="ce_save">Enregistrer</button>':''}
+    ${ed&&c.kind==='entity'?'<button class="alt" id="ce_issue">'+(c.expiration?'Renouveler l’agrément (1 an)':'Émettre l’agrément (1 an)')+'</button>':''}
+    ${c.url?'<button class="alt" id="ce_open">📜 Ouvrir / imprimer le certificat</button><button class="alt" id="ce_copy">Copier le lien</button>':''}</div>`);
+  const save=async(extra)=>{const b={...extra};if(ed){b.categorie=$('#ce_cat').value;b.responsable=$('#ce_resp').value;b.ordre_no=$('#ce_ordre').value;b.adresse=$('#ce_addr').value;b.suspendu=$('#ce_susp').checked;b.motif=$('#ce_motif').value}
+    const f=ed&&$('#ce_photo').files[0];if(f)await new Promise(res=>resizePhoto(f,async d=>{try{await api('POST','/api/certificats/'+encodeURIComponent(id)+'/photo',{data:d})}catch(e){fail(e)}res()}));
+    await api('PUT','/api/certificats/'+encodeURIComponent(id),b);await refresh();certModal(id)};
+  $('#ce_save')&&($('#ce_save').onclick=()=>save({}).catch(fail));
+  $('#ce_issue')&&($('#ce_issue').onclick=()=>save({issue:true}).catch(fail));
+  $('#ce_open')&&($('#ce_open').onclick=()=>window.open(c.url,'_blank','noopener'));
+  $('#ce_copy')&&($('#ce_copy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(c.url).then(()=>{$('#ce_copy').textContent='Lien copié ✔'})});
+}
+function addOffForm(){
+  openM('<h3>Nouvelle officine</h3><div class="row"><div><label>Nom</label><input id="np_nom"></div><div><label>Pharmacien responsable</label><input id="np_ph"></div></div>'+geoBlock('np')+'<div id="np_msg"></div><div style="margin-top:10px"><button id="np_ok">Enregistrer</button></div>');
+  bindGeo('np');
+  $('#np_ok').onclick=async()=>{
+    const nom=$('#np_nom').value.trim(),lat=+$('#np_la').value,lon=+$('#np_lo').value;
+    if(!nom||!$('#np_la').value||!$('#np_lo').value){$('#np_msg').innerHTML=msg('Nom, latitude et longitude requis (utilisez « Ma position »)','err');return}
+    const near=DB.officines.filter(o=>o.statut!=='clandestine'&&hav(lat,lon,o.lat,o.lon)<SETTINGS.minDist);
+    if(near.length&&!confirm('Attention : '+near.length+' officine(s) à moins de '+SETTINGS.minDist+' m ('+near[0].nom+'). Enregistrer quand même (dérogation à justifier) ?'))return;
+    try{const r=await api('POST','/api/officines',{nom,prov:$('#np_pv').value,entite:$('#np_en').value.trim(),avenue:$('#np_av').value.trim(),pharmacien:$('#np_ph').value.trim(),lat,lon});await refresh();closeM();go();if(r.queued)alert(r.message)}catch(e){$('#np_msg').innerHTML=msg(esc(e.message),'err')}}}
+function importForm(){
+  openM('<h3>Importer des officines (CSV)</h3><div class="sub">Colonnes : nom, province, entite, pharmacien, lat, lon. Séparateur virgule ou point-virgule. Permet de reprendre les fichiers existants après export en CSV.</div><input type="file" id="csvf" accept=".csv,text/csv"><div id="csvm"></div>');
+  $('#csvf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{
+    const rows=r.result.split(/\r?\n/).filter(x=>x.trim());const sep=rows[0].includes(';')?';':',';const hd=rows[0].split(sep).map(x=>x.trim().toLowerCase());
+    const data=rows.slice(1).map(l=>{const c=l.split(sep),g=k=>(c[hd.indexOf(k)]||'').trim();return{nom:g('nom'),prov:PROVS.find(p=>p[0]===g('province'))?g('province'):'Kinshasa',entite:g('entite'),pharmacien:g('pharmacien'),lat:parseFloat(g('lat')),lon:parseFloat(g('lon'))}});
+    try{const o=await api('POST','/api/officines/bulk',{rows:data});await refresh();$('#csvm').innerHTML=msg(o.imported+' officine(s) importée(s), '+o.rejected+' ligne(s) rejetée(s). Statut « en attente d’identification ».')+'<button onclick="closeM();go()">Terminer</button>'}catch(e){$('#csvm').innerHTML=msg(esc(e.message),'err')}};r.readAsText(f)};
+}
+function toCSV(rows,cols){return cols.join(',')+'\n'+rows.map(r=>cols.map(c=>'"'+String(r[c]??'').replace(/"/g,'""')+'"').join(',')).join('\n')}
+function dl(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+text],{type:'text/csv;charset=utf-8'}));a.download=name;a.click()}
+
+/* ====================== Circuit d'approvisionnement ====================== */
+function roleCheck(d){
+  const ent=DB.entities.find(e=>e.id===d.fromId);const issues=[];
+  if(d.type.startsWith('Importation')&&ent&&!ent.autorises.includes('importateur'))issues.push('Émetteur non autorisé à importer');
+  if(d.type.startsWith('Importation → Officine')&&ent&&ent.reels.includes('officine'))issues.push('Importateur exploitant aussi une officine');
+  if(d.type==='Importation → Officine')issues.push('Livraison directe importateur → officine (à contrôler)');
+  if(d.type.startsWith('Grossiste')&&ent&&ent.reels.includes('importateur'))issues.push('Grossiste cumulant importation');
+  if(PROD[d.prod]&&!PROD[d.prod][4])issues.push('Produit non autorisé');
+  return issues}
+function vSupply(v){
+  const canDecl=can('decl','C');
+  const gaps=DB.decl.filter(d=>d.rec===null||d.rec!==d.sent);
+  const cumul=DB.entities.filter(e=>e.reels.length>1);
+  v.innerHTML=head('Circuit d’importation et de distribution','Chaque approvisionnement est déclaré (produit, lot, quantité, importateur d’origine) et rapproché de la réception.')+
+  `<div class="grid g4"><div class="card kpi"><div class="v">${DB.decl.length}</div><div class="l">Déclarations</div></div><div class="card kpi y"><div class="v">${gaps.length}</div><div class="l">Écarts / non réceptionnées</div></div><div class="card kpi r"><div class="v">${cumul.length}</div><div class="l">Entités à rôles cumulés</div></div><div class="card kpi g"><div class="v">${DB.decl.filter(d=>roleCheck(d).length).length}</div><div class="l">Déclarations en alerte</div></div></div>
+  <div class="grid g2" style="margin-top:14px">
+  <div class="card"><h3>Contrôle des rôles (importateur / grossiste / officine)</h3><div class="note">Règles de cumul d’activités et obligation déclarative : exigences à faire valider juridiquement par le régulateur.</div>
+  <div class="scroll" style="max-height:230px"><table><tr><th>Entité</th><th>Autorisé</th><th>Rôles constatés</th><th></th></tr>${DB.entities.filter(e=>e.reels.length>1||e.autorises[0]!==e.reels[0]).map(e=>`<tr><td>${esc(e.nom)}</td><td>${e.autorises.join(', ')}</td><td>${e.reels.join(', ')}</td><td>${tag('Cumul','bad')}</td></tr>`).join('')}</table></div></div>
+  ${canDecl?`<div class="card"><h3>Déclarer un approvisionnement</h3><div class="row"><div><label>Type</label><select id="d_t"><option>Importation → Grossiste</option><option>Grossiste → Officine</option><option>Importation → Officine</option></select></div><div><label>Importateur d’origine</label><select id="d_o">${DB.entities.filter(e=>e.autorises[0]==='importateur').slice(0,32).map(e=>`<option value="${e.id}">${esc(e.nom)}</option>`).join('')}</select></div></div>
+  <div class="row"><div><label>Émetteur</label><select id="d_f">${DB.entities.map(e=>`<option value="${e.id}">${esc(e.nom)}</option>`).join('')}</select></div><div><label>Destinataire</label><select id="d_d">${DB.entities.filter(e=>e.autorises[0]==='grossiste').map(e=>`<option value="${e.id}">${esc(e.nom)}</option>`).join('')}${DB.officines.filter(o=>o.carte).slice(0,40).map(o=>`<option value="${o.id}">${esc(o.nom)} (${o.prov})</option>`).join('')}</select></div></div>
+  <div class="row"><div><label>Produit</label><select id="d_p">${PRODUCTS.map(p=>`<option value="${p[0]}">${esc(p[1])}${p[4]?'':' ⛔'}</option>`).join('')}</select></div><div><label>N° de lot</label><input id="d_l" value="L${Math.random().toString(36).slice(2,7).toUpperCase()}"></div><div><label>Quantité</label><input id="d_q" type="number" value="500"></div></div>
+  <div id="d_m"></div><div style="margin-top:8px"><button id="d_ok">Déclarer</button></div></div>`:''}</div>
+  <div class="card" style="margin-top:14px"><h3>Registre des déclarations & rapprochement expédition / réception</h3><div class="scroll"><table><tr><th>N°</th><th>Date</th><th>Circuit</th><th>Produit / lot</th><th>Importateur d’origine</th><th>Expédié</th><th>Reçu</th><th>Contrôle</th><th></th></tr>
+  ${DB.decl.slice().reverse().slice(0,90).map(d=>{const is=roleCheck(d);const gap=d.rec===null?tag('En attente de réception','warn'):d.rec!==d.sent?tag('Écart '+(d.sent-d.rec),'bad'):tag('Conforme','ok');
+   return `<tr><td>${d.id}</td><td>${d.date}</td><td>${esc(d.type)}<br><small>${esc(d.from)} → ${esc(d.to)}</small></td><td>${esc(PROD[d.prod][1])}<br><small>${d.lot} · exp. ${d.exp}</small></td><td>${esc(d.orig)}</td><td>${fmt(d.sent)}</td><td>${d.rec===null?'—':fmt(d.rec)}</td><td>${gap}${is.map(x=>'<br>'+tag(x,'bad')).join('')}${ctlTag(d)}</td><td>${d.rec===null&&can('decl','U')?`<button class="sm alt" data-r="${d.id}">Confirmer réception</button>`:''}${can('decl','U')?` <button class="sm alt" data-de="${d.id}">Modifier</button>`:''}${can('decl','D')?` <button class="sm red" data-dd="${d.id}">Suppr.</button>`:''}${can('decl','control')?` <button class="sm" data-ctl="${d.id}">Contrôle DGDA/OCC</button>`:''}</td></tr>`}).join('')}</table></div></div>`;
+  document.querySelectorAll('[data-ctl]').forEach(b=>b.onclick=()=>ctlModal(b.dataset.ctl));document.querySelectorAll('[data-de]').forEach(b=>b.onclick=()=>editDecl(b.dataset.de));document.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>delRec('decl',b.dataset.dd,'cette déclaration'));
+  document.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{const d=DB.decl.find(x=>x.id===b.dataset.r);const q=prompt('Quantité réellement reçue (expédié : '+d.sent+')',d.sent);if(q===null)return;try{await api('POST','/api/decl/'+d.id+'/receive',{qty:+q||0});await refresh();go()}catch(e){fail(e)}});
+  if(canDecl)$('#d_ok').onclick=async()=>{
+    const t=$('#d_t').value,q=+$('#d_q').value,from=DB.entities.find(e=>e.id===$('#d_f').value),dv=$('#d_d').value;
+    const to=DB.entities.find(e=>e.id===dv)||DB.officines.find(o=>o.id===dv),orig=DB.entities.find(e=>e.id===$('#d_o').value);
+    if(!$('#d_l').value||q<=0){$('#d_m').innerHTML=msg('Lot et quantité requis','err');return}
+    const dd={type:t,from:{id:from.id,nom:from.nom},to:{id:to.id,nom:to.nom},orig:orig.nom,prod:$('#d_p').value,lot:$('#d_l').value,sent:q};
+    try{const o=await api('POST','/api/decl',dd);if(o.queued){$('#d_m').innerHTML=msg(esc(o.message));return}await refresh();const d=DB.decl.find(x=>x.id===o.id);const is=roleCheck(d);
+      $('#d_m').innerHTML=is.length?msg('Déclaration enregistrée avec alerte : '+is.map(esc).join(' ; '),'err'):msg('Déclaration '+o.id+' enregistrée.');setTimeout(go,1800)}catch(e){$('#d_m').innerHTML=msg(esc(e.message),'err')}};
+}
+
+/* ====================== Prescription électronique ====================== */
+function vRx(v){
+  const canW=can('rx','C');let lines=[];
+  v.innerHTML=head('Prescription électronique','Chaque ordonnance relie un patient à un prescripteur, ne contient que des produits autorisés et porte un QR code lisible par le pharmacien.')+
+  `<div class="grid g2">${canW?`<div class="card"><h3>Nouvelle ordonnance</h3><div class="row"><div><label>Prescripteur</label><select id="r_d" ${ROLE==='med'?'disabled':''}>${DOCTORS.map(d=>`<option value="${d[0]}" ${d[0]===(ROLE==='med'?DOCID:'MD01')?'selected':''}>${esc(d[1])} — ${esc(d[3])}</option>`).join('')}</select></div></div>
+   <div class="row"><div><label>Patient</label><input id="r_p" placeholder="Nom et postnom"></div><div style="flex:0;min-width:80px"><label>Âge</label><input id="r_a" type="number"></div></div><div class="row"><div><label>Téléphone du patient (WhatsApp / SMS)</label><input id="r_ph" placeholder="+243…"></div><div><label>E-mail du patient</label><input id="r_em" type="email"></div></div><hr>
+   <div class="row"><div><label>Produit (base des médicaments essentiels / autorisés)</label><select id="r_pr">${PRODUCTS.map(p=>`<option value="${p[0]}">${esc(p[1])} — ${p[2]}${p[4]?'':' ⛔ NON AUTORISÉ'}</option>`).join('')}</select></div></div>
+   <div class="row"><div><label>Posologie</label><input id="r_po" value="1 cp x3/j – 5 j"></div><div style="flex:0;min-width:80px"><label>Qté</label><input id="r_q" type="number" value="15"></div><div style="flex:0"><button id="r_add">Ajouter</button></div></div>
+   <div id="r_l" style="margin-top:8px"></div><div id="r_m"></div><button id="r_ok" style="margin-top:8px">Signer et générer le QR</button></div>`:''}
+   <div class="card"><h3>Ordonnances émises (${DB.rx.length})</h3><div class="scroll"><table><tr><th>N°</th><th>Patient</th><th>Prescripteur</th><th>Lignes</th><th>État</th><th></th></tr>${DB.rx.slice().reverse().map(r=>`<tr><td>${r.id}</td><td>${esc(r.patient)}, ${r.age||'?'} a</td><td>${esc(DOCTORS.find(d=>d[0]===r.doc)[1])}</td><td>${r.lines.length}</td><td>${tag(r.status,r.status==='ouverte'?'info':r.status==='soldée'?'ok':'warn')}</td><td><button class="sm alt" data-q="${r.id}">Voir</button> <a class="btn sm" target="_blank" rel="noopener" href="${docLink('rx',r.id)}">🖨 Imprimer</a> ${(ROLE==='med'||ROLE==='admin')?`<a class="btn sm" target="_blank" rel="noopener" href="${docLink('rx',r.id)}&act=send">✉ Envoyer</a>`:''} ${can('rx','U')&&r.status==='ouverte'?`<button class="sm alt" data-xe="${r.id}">Modifier</button>`:''} ${can('rx','D')&&r.status==='ouverte'?`<button class="sm red" data-xd="${r.id}">Annuler</button>`:''}</td></tr>`).join('')}</table></div></div></div>`;
+  document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>showRx(b.dataset.q));
+  document.querySelectorAll('[data-xe]').forEach(b=>b.onclick=()=>editRx(b.dataset.xe));document.querySelectorAll('[data-xd]').forEach(b=>b.onclick=()=>delRec('rx',b.dataset.xd,'cette ordonnance'));
+  if(!canW)return;
+  const dr=()=>{$('#r_l').innerHTML=lines.length?`<table>${lines.map((l,i)=>`<tr><td>${esc(PROD[l.pid][1])}</td><td>${esc(l.poso)}</td><td>${l.qty}</td><td><button class="sm alt" data-x="${i}">✕</button></td></tr>`).join('')}</table>`:'<div class="sub">Aucune ligne.</div>';document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{lines.splice(+b.dataset.x,1);dr()})};dr();
+  $('#r_add').onclick=()=>{const p=PROD[$('#r_pr').value];
+    if(!p[4]){$('#r_m').innerHTML=msg('Prescription bloquée : « '+esc(p[1])+' » ne figure pas parmi les produits autorisés.','err');return}
+    if(p[5]&&!confirm('Produit soumis à contrôle renforcé (stupéfiant/psychotrope/injectable sensible). Confirmer la prescription ?'))return;
+    lines.push({pid:p[0],poso:$('#r_po').value,qty:+$('#r_q').value||1,done:0});$('#r_m').innerHTML='';dr()};
+  $('#r_ok').onclick=async()=>{
+    if(!$('#r_p').value.trim()||!lines.length){$('#r_m').innerHTML=msg('Patient et au moins une ligne requis','err');return}
+    try{const r=await api('POST','/api/rx',{doc:$('#r_d').value,patient:$('#r_p').value.trim(),age:+$('#r_a').value||0,patient_phone:$('#r_ph').value.trim()||null,patient_email:$('#r_em').value.trim()||null,lines:lines.map(l=>({pid:l.pid,poso:l.poso,qty:l.qty}))});await refresh();lines=[];go();if(r.queued)alert(r.message);else showRx(r.id)}catch(e){$('#r_m').innerHTML=msg(esc(e.message),'err')}};
+}
+const rxPayload=r=>`EPHARMA|RX|${r.id}|${r.sig}`;
+function showRx(id){const r=DB.rx.find(x=>x.id===id),d=DOCTORS.find(x=>x[0]===r.doc);
+  openM(`<h3>Ordonnance ${r.id}</h3><div style="display:flex;gap:14px;flex-wrap:wrap"><div style="flex:1;min-width:220px"><b>Patient :</b> ${esc(r.patient)} (${r.age||'?'} ans)<br><b>Prescripteur :</b> ${esc(d[1])} · ${d[3]}<br><b>Date :</b> ${r.date}<br><b>Signature :</b> ${r.sig}<table style="margin-top:8px">${r.lines.map(l=>`<tr><td>${esc(PROD[l.pid][1])}</td><td>${esc(l.poso)}</td><td>${l.done}/${l.qty}</td></tr>`).join('')}</table></div><div>${qrSvg(rxPayload(r),140)}<div style="font-size:11px;text-align:center">${r.id}</div></div></div><p class="noprint"><a class="btn" target="_blank" rel="noopener" href="${docLink('rx',r.id)}&act=print">🖨 Imprimer</a> <a class="btn" target="_blank" rel="noopener" href="${docLink('rx',r.id)}&act=pdf">⬇ Télécharger PDF</a> ${(ROLE==='med'||ROLE==='admin')?`<a class="btn" target="_blank" rel="noopener" href="${docLink('rx',r.id)}&act=send">✉ Envoyer au patient</a>`:''}</p>`)}
+
+/* ====================== Pharmacien : stock & délivrance ====================== */
+async function vPharma(v){
+  const oid=DB.pharmaOff,o=DB.officines.find(x=>x.id===oid);await loadStock(oid);const S=ensureStock(oid);
+  v.innerHTML=head('Officine : stock & délivrance',esc(o.nom)+' — '+esc(o.prov)+'. Le pharmacien ne peut délivrer que les produits prescrits et autorisés.')+
+  `<div class="row"><div><label>Officine (démo)</label><select id="p_o">${DB.officines.filter(x=>x.carte&&(ROLE!=='pharma'||x.id===DB.pharmaOff)).slice(0,60).map(x=>`<option value="${x.id}">${esc(x.nom)} — ${x.prov}</option>`).join('')}</select></div></div>
+  <div class="grid g2" style="margin-top:8px"><div class="card"><h3>Lire une ordonnance (QR)</h3><div class="row"><div><label>Contenu du QR ou n° d’ordonnance</label><input id="s_in" placeholder="EPHARMA|RX|RX-2026-000001|… ou RX-2026-000001"></div><div style="flex:0"><button id="s_go">Lire</button></div></div>
+  <div class="row" style="margin-top:6px"><div><label>Ou simuler un scan</label><select id="s_sel">${DB.rx.filter(r=>r.status!=='soldée').map(r=>`<option value="${rxPayload(r)}">${r.id} — ${esc(r.patient)}</option>`).join('')}</select></div><div style="flex:0"><button class="alt" id="s_sim">Scanner</button></div></div><div class="note">La caméra du terminal peut lire le QR via la bibliothèque de scan en production ; ici la lecture est simulée.</div><div id="s_out"></div></div>
+  <div class="card"><h3>Stock de l’officine</h3>${stockForm()}<div class="scroll" style="max-height:340px"><table><tr><th>Produit</th><th>Lots (FEFO)</th><th>Total</th></tr>${Object.entries(S).map(([pid,ls])=>{const t=ls.reduce((a,l)=>a+l.qty,0);return `<tr><td>${esc(PROD[pid][1])}</td><td><small>${ls.map(l=>l.lot+' ('+l.qty+', exp '+l.exp+(new Date(l.exp)<TODAY?' ⚠ périmé':'')+')'+lotCtl(pid,l)).join('<br>')}</small></td><td>${t===0?tag('Rupture','bad'):t<30?tag(t,'warn'):t}</td></tr>`}).join('')}</table></div></div></div>`;
+  $('#p_o').value=oid;$('#p_o').onchange=e=>{DB.pharmaOff=e.target.value;go()};bindStock(oid);
+  const read=async txt=>{
+    try{const r=await api('POST','/api/rx/verify',{payload:txt});showDeliver(r)}catch(e){$('#s_out').innerHTML=msg('⚠ '+esc(e.message)+(/Signature/.test(e.message)?'. Délivrance refusée.':''),'err')}};
+  $('#s_go').onclick=()=>read($('#s_in').value);$('#s_sim').onclick=()=>read($('#s_sel').value);
+}
+function showDeliver(r){
+  const oid=DB.pharmaOff,S=ensureStock(oid),d=DOCTORS.find(x=>x[0]===r.doc);
+  const html='<div class="okmsg">Signature vérifiée — '+r.id+' · '+esc(r.patient)+' · '+esc(d[1])+'</div><table><tr><th>Produit</th><th>Prescrit</th><th>Déjà délivré</th><th>Stock</th><th>Délivrer</th></tr>'+r.lines.map((l,i)=>{const st=(S[l.pid]||[]).filter(x=>new Date(x.exp)>TODAY).reduce((a,x)=>a+x.qty,0),rest=l.qty-l.done,max=Math.min(st,rest);
+    return '<tr><td>'+esc(PROD[l.pid][1])+'</td><td>'+l.qty+'</td><td>'+l.done+'</td><td>'+st+'</td><td>'+(rest===0?tag('Soldé','ok'):max===0?tag('Rupture','bad'):'<input type="number" id="dl'+i+'" min="0" max="'+max+'" value="'+max+'" style="width:80px">')+'</td></tr>'}).join('')+'</table><button id="dlOK" style="margin-top:8px">Valider la délivrance (totale ou partielle)</button><div id="dlM"></div>';
+  $('#s_out').innerHTML=html;
+  $('#dlOK').onclick=async()=>{
+    const req=r.lines.map((l,i)=>{const el=$('#dl'+i);return el?{pid:l.pid,qty:+el.value||0}:null}).filter(Boolean);
+    try{const nr=await api('POST','/api/rx/'+r.id+'/deliver',{officine:DB.pharmaOff,lines:req});if(nr.queued){$('#s_out').innerHTML=msg(esc(nr.message));return}await refresh();await vPharma($('#view'));showDeliver(nr);$('#s_out').insertAdjacentHTML('afterbegin',msg('Délivrance enregistrée en base — stock mis à jour ('+nr.status+').'))}catch(e){$('#dlM').innerHTML=msg(esc(e.message),'err')}};
+}
+
+/* ====================== Inspection, PV et POS ====================== */
+function vInsp(v){
+  const canW=can('pv','C');
+  v.innerHTML=head('Inspection, procès-verbaux & encaissement POS','Constat sur site sur tablette, PV numérique, perception immédiate des amendes et taxes via terminal POS.')+
+  `<div class="grid g2">${canW?`<div class="card"><h3>Nouveau procès-verbal de constat</h3>
+  <label>Officine inspectée</label><select id="i_o" style="width:100%">${DB.officines.map(o=>`<option value="${o.id}">${esc(o.nom)} — ${o.prov} (${statLbl[o.statut][0]})</option>`).join('')}</select>
+  <label>Infractions constatées</label>${FINES.map((f,i)=>`<label style="display:flex;gap:8px;color:var(--ink);font-size:13px;margin:3px 0"><input type="checkbox" class="fx" value="${i}"> ${f[0]} <b style="margin-left:auto">${usd(f[1])}</b></label>`).join('')}
+  <label>Observations</label><textarea id="i_ob" rows="2" style="width:100%"></textarea>
+  <div class="note">Barème indicatif en USD — à remplacer par le barème officiel des actes réglementaires.</div><div id="i_m"></div><button id="i_ok">Générer le PV</button></div>`:''}
+  <div class="card"><h3>Procès-verbaux (${DB.pv.length})</h3>${DB.pv.length?`<div class="scroll"><table><tr><th>N°</th><th>Officine</th><th>Montant</th><th>Statut</th><th></th></tr>${DB.pv.slice().reverse().map(p=>`<tr><td>${p.id}</td><td>${esc(p.off)}</td><td>${usd(p.total)}</td><td>${p.paid?tag('Payé · '+p.mode,'ok'):p.total?tag('À percevoir','warn'):tag('Sans amende','grey')}</td><td><button class="sm alt" data-v="${p.id}">Voir</button> <a class="btn sm" target="_blank" rel="noopener" href="${docLink('pv',p.id)}">🖨</a> ${!p.paid&&p.total&&can('pv','pay')?`<button class="sm" data-p="${p.id}">Encaisser</button>`:''} ${can('pv','U')&&!p.paid?`<button class="sm alt" data-pe="${p.id}">Modifier</button>`:''} ${can('pv','D')&&!p.paid?`<button class="sm red" data-pd="${p.id}">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>`:'<div class="sub">Aucun PV pour le moment.</div>'}</div></div>`;
+  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>showPV(b.dataset.v));
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>pos(b.dataset.p));
+  document.querySelectorAll('[data-pe]').forEach(b=>b.onclick=()=>editPv(b.dataset.pe));document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>delRec('pv',b.dataset.pd,'ce PV'));
+  if(canW)$('#i_ok').onclick=async()=>{
+    const ch=[...document.querySelectorAll('.fx:checked')].map(c=>+c.value);
+    if(!ch.length&&!confirm('Aucune infraction cochée : générer un PV de conformité ?'))return;
+    try{const p=await api('POST','/api/pv',{offId:$('#i_o').value,fines:ch,obs:$('#i_ob').value});if(p.queued){alert(p.message);return}await refresh();go();showPV(p.id)}catch(e){fail(e)}
+}
+}
+function showPV(id){const p=DB.pv.find(x=>x.id===id);
+  openM(`<div style="border-top:6px solid var(--ac-green)"><h3>Procès-verbal de constat ${p.id}</h3><div class="stripe" style="height:5px;background:linear-gradient(90deg,#007FFF 60%,#F7D618 60% 80%,#CE1021 80%)"></div>
+  <p><b>Officine :</b> ${esc(p.off)} (${esc(p.offId)}) — ${esc(p.prov)}<br><b>Date :</b> ${p.date} · <b>Inspecteur :</b> ${esc(p.insp)}</p>
+  <table>${p.items.map(i=>`<tr><td>${esc(i[0])}</td><td>${usd(i[1])}</td></tr>`).join('')||'<tr><td>Aucune infraction</td><td></td></tr>'}<tr><th>Total</th><th>${usd(p.total)}</th></tr></table>
+  <p>${esc(p.obs)}</p><p>${p.paid?msg('Payé ('+esc(p.mode)+') — reçu '+esc(p.rcp),'okmsg'):''}</p><div style="text-align:right">${qrSvg(`EPHARMA|PV|${p.id}|${p.total}|${hash(p.id+p.total)}`,90)}</div></div><p class="noprint"><a class="btn" target="_blank" rel="noopener" href="${docLink('pv',p.id)}">Ouvrir le document imprimable (A4)</a></p>`)}
+function pos(id){const p=DB.pv.find(x=>x.id===id);
+  openM('<h3>Paiement — '+p.id+'</h3><div style="font-size:26px;font-weight:700;margin:6px 0">'+usd(p.total)+'</div><label>Mode de paiement</label><select id="pm" style="width:100%"><option>Carte bancaire (POS)</option><option>Mobile money</option><option>Espèces (reçu)</option><option>QR code de paiement</option><option>Lien de paiement (SMS / WhatsApp / e-mail)</option></select><div class="note">Simulation : en production, le POS ou le prestataire de paiement renvoie la référence. Avec le QR code ou le lien, le contrevenant paie depuis son téléphone et le PV passe automatiquement à « payé ».</div><button onclick="posGo(\''+p.id+'\')">Continuer</button>')}
+function posGo(id){const m=$('#pm').value;if(/^QR|^Lien/.test(m))payLinkUI(id,m);else payPV(id)}
+async function payLinkUI(id,mode){
+  try{const L=await api('GET','/api/pv/'+id+'/paylink');const k=new URL(L.url).searchParams.get('k');
+    const wa='https://wa.me/?text='+encodeURIComponent(L.text),sms='sms:?&body='+encodeURIComponent(L.text),em='mailto:?subject='+encodeURIComponent('Paiement du procès-verbal '+id)+'&body='+encodeURIComponent(L.text);
+    openM('<div id="plk"><h3>Paiement par '+(/^QR/.test(mode)?'QR code':'lien')+' — '+id+'</h3><div style="font-size:24px;font-weight:700">'+usd(L.total)+'</div><div style="text-align:center;margin:10px 0">'+qrSvg(L.url,190)+'<div style="font-size:12px;color:#5B6B62">Scannez avec le téléphone du payeur</div></div><label>Lien de paiement</label><input id="plurl" readonly value="'+esc(L.url)+'" onclick="this.select()"><div class="row" style="margin-top:8px"><a class="btn sm" target="_blank" rel="noopener" href="'+wa+'">WhatsApp</a><a class="btn sm" href="'+sms+'">SMS</a><a class="btn sm" href="'+em+'">E-mail</a><button class="sm alt" onclick="navigator.clipboard&&navigator.clipboard.writeText($(\'#plurl\').value);this.textContent=\'Copié ✔\'">Copier</button></div><div class="note" id="plst">⏳ En attente du paiement… (vérification automatique)</div></div>');
+    const iv=setInterval(async()=>{if(!document.getElementById('plk')){clearInterval(iv);return}
+      try{const r=await fetch((window.API_BASE||'')+'/api/pay/'+encodeURIComponent(id)+'?k='+encodeURIComponent(k));const st=await r.json();if(st.paid){clearInterval(iv);document.getElementById('plst').innerHTML='✅ Paiement reçu — reçu '+esc(st.rcp);await refresh();setTimeout(()=>{showPV(id);go()},1200)}}catch{}},3500)
+  }catch(e){fail(e)}}
+async function payPV(id){try{await api('POST','/api/pv/'+id+'/pay',{mode:$('#pm').value});await refresh();showPV(id);go()}catch(e){fail(e)}}
+
+/* ====================== Titres, alertes, AMM ====================== */
+const SLA=[5,20,30,10];
+const ammDays=a=>Math.floor((TODAY-new Date(a.etape_ts||a.depot))/864e5);
+const ammLate=a=>a.etape<4&&ammDays(a)>SLA[a.etape];
+const ammExp=a=>a.titre_exp?Math.ceil((new Date(a.titre_exp)-TODAY)/864e5):null;
+async function vTitles(v){
+  let notifs=[];try{notifs=await api('GET','/api/notifications')}catch(e){}
+  const F={prov:'',lvl:'',type:''};
+  const canAck=['admin','manager','insp'].includes(ROLE);
+  const A=DB.amm,open=notifs.filter(n=>!n.ack_ts);
+  v.innerHTML=head('Alertes, rappels & cycle de vie des dossiers','Rappels automatiques J-90, J-60, J-30, J-7 et échéance dépassée, délais de traitement des dossiers'+(SCOPE?' — province : '+esc(SCOPE):''))+
+  '<div class="grid g4"><div class="card kpi r"><div class="v">'+open.filter(n=>n.level==='bad').length+'</div><div class="l">Alertes urgentes non acquittées</div></div><div class="card kpi y"><div class="v">'+open.filter(n=>n.level==='warn').length+'</div><div class="l">À suivre</div></div><div class="card kpi"><div class="v">'+A.filter(a=>a.etape<4).length+'</div><div class="l">Dossiers en cours</div></div><div class="card kpi r"><div class="v">'+A.filter(ammLate).length+'</div><div class="l">Dossiers hors délai</div></div></div>'+
+  '<div class="card" style="margin-top:14px"><h3>Alertes et rappels ('+open.length+' à traiter)</h3><div class="row"><div><label>Niveau</label><select id="fl"><option value="">Tous</option><option value="bad">Urgent</option><option value="warn">À suivre</option><option value="info">Information</option></select></div>'+(SCOPE?'':'<div><label>Province</label><select id="fpn"><option value="">Toutes</option>'+PROVS.map(p=>'<option>'+p[0]+'</option>').join('')+'</select></div>')+'<div><label>Afficher</label><select id="fa"><option value="open">Non acquittées</option><option value="all">Toutes</option></select></div></div><div id="nlist"></div></div>'+
+  '<div class="card" style="margin-top:14px"><h3>Dossiers de demande et de renouvellement (AMM, autorisation d’importation, agrément) '+(can('amm','C')?'<button class="sm" id="ammNew" style="margin-left:10px">+ Nouveau dossier</button>':'')+'</h3><div class="row"><div><label>Type</label><select id="ft"><option value="">Tous</option>'+['AMM (mise sur le marché)','Licence d’importation','Agrément dépôt','Renouvellement AMM'].map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+(SCOPE?'':'<div><label>Province</label><select id="fpp"><option value="">Toutes</option>'+PROVS.map(p=>'<option>'+p[0]+'</option>').join('')+'</select></div>')+'</div><div class="pipe" id="pipe" style="margin-top:10px"></div></div>';
+  const drawN=()=>{const lv=$('#fl').value,pv=$('#fpn')?$('#fpn').value:'',all=$('#fa').value==='all';
+    const L=notifs.filter(n=>(!lv||n.level===lv)&&(!pv||n.prov===pv)&&(all||!n.ack_ts));
+    $('#nlist').innerHTML=L.length?'<div class="scroll" style="max-height:320px"><table>'+L.slice(0,80).map(n=>'<tr style="'+(n.ack_ts?'opacity:.55':'')+'"><td>'+tag(n.level==='bad'?'Urgent':n.level==='warn'?'À suivre':'Info',n.level)+'</td><td>'+esc(n.msg)+'<br><small>'+esc(n.prov||'')+' · '+(n.kind==='delai'?'délai de traitement':'échéance de titre')+(n.ack_ts?' · acquittée par '+esc(n.ack_by):'')+'</small></td><td>'+(canAck&&!n.ack_ts?'<button class="sm alt" data-ack="'+n.id+'">Acquitter</button>':'')+'</td></tr>').join('')+'</table></div>':'<div class="sub">Aucune alerte.</div>';
+    document.querySelectorAll('[data-ack]').forEach(b=>b.onclick=async()=>{try{await api('POST','/api/notifications/'+b.dataset.ack+'/ack');const n=notifs.find(x=>x.id==b.dataset.ack);if(n){n.ack_ts=new Date().toISOString();n.ack_by='vous'}drawN();loadBell()}catch(e){fail(e)}})};
+  const drawP=()=>{const ty=$('#ft').value,pv=$('#fpp')?$('#fpp').value:'';
+    const L=A.filter(a=>(!ty||a.type===ty)&&(!pv||a.prov===pv));
+    $('#pipe').innerHTML=DB.ammSteps.map((s,i)=>'<div class="col"><h4>'+(i+1)+'. '+s+' ('+L.filter(a=>a.etape===i).length+')</h4>'+L.filter(a=>a.etape===i).map(a=>{const e=ammExp(a),lt=ammLate(a);
+      return '<div class="it" style="border-left-color:'+(lt?'#CE1021':e!==null&&e<=30?'#F7D618':'#007FFF')+'"><b>'+a.id+'</b> '+(a.kind==='renouvellement'?tag('Renouvellement','info'):tag('Demande','grey'))+'<br>'+esc(a.type)+'<br>'+esc(a.demandeur)+'<br><small>'+esc(a.obj)+' · '+esc(a.prov||'')+'<br>Dépôt '+a.depot+(a.etape<4?' · à cette étape depuis '+ammDays(a)+' j / '+SLA[a.etape]+' j':'')+'</small>'+(lt?'<br>'+tag('Hors délai','bad'):'')+(e!==null?'<br>'+(e<0?tag('Titre expiré depuis '+(-e)+' j','bad'):tag('Titre valable jusqu’au '+a.titre_exp+' ('+e+' j)',e<=30?'warn':'ok')):'')+
+        '<div style="margin-top:4px">'+(i<4&&can('amm','advance')?'<button class="sm alt" data-a="'+a.id+'">Étape suivante →</button> ':'')+(i===4?'<button class="sm" data-tt="'+a.id+'" title="Titre réglementaire imprimable">📜 Titre</button> ':'')+(i===4&&can('amm','C')?'<button class="sm" data-rn="'+a.id+'">Renouveler</button> ':'')+'<button class="sm alt" data-h="'+a.id+'">Historique</button>'+(can('amm','D')?' <button class="sm red" data-ad="'+a.id+'">✕</button>':'')+'</div></div>'}).join('')+'</div>').join('');
+    document.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{try{await api('POST','/api/amm/'+b.dataset.a+'/advance');await refresh();go()}catch(e){fail(e)}});
+    document.querySelectorAll('[data-tt]').forEach(b=>b.onclick=async()=>{try{const r=await api('GET','/api/titres/'+encodeURIComponent(b.dataset.tt));if(!r.url)return alert(r.reason||'Titre non délivré');window.open(r.url,'_blank','noopener')}catch(e){fail(e)}});
+    document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=async()=>{try{const r=await api('POST','/api/amm/'+b.dataset.rn+'/renew');await refresh();go();if(r.queued)alert(r.message)}catch(e){fail(e)}});
+    document.querySelectorAll('[data-h]').forEach(b=>b.onclick=async()=>{try{const H=await api('GET','/api/amm/'+b.dataset.h+'/history');openM('<h3>Historique du dossier '+b.dataset.h+'</h3><table>'+H.map(h=>'<tr><td>'+new Date(h.ts).toLocaleString('fr-FR')+'</td><td>'+esc(h.note)+'</td><td><small>'+esc(ROLE_LABELS[h.by_role]||h.by_role||'')+'</small></td></tr>').join('')+'</table>')}catch(e){fail(e)}});
+    document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>delRec('amm',b.dataset.ad,'ce dossier'))};
+  ['fl','fpn','fa'].forEach(i=>{const e=$('#'+i);if(e)e.onchange=drawN});['ft','fpp'].forEach(i=>{const e=$('#'+i);if(e)e.onchange=drawP});
+  drawN();drawP();
+  const nb=$('#ammNew');if(nb)nb.onclick=()=>formModal('Nouveau dossier',[['type','Type','select','AMM (mise sur le marché)',['AMM (mise sur le marché)','Licence d’importation','Agrément dépôt','Renouvellement AMM'].map(x=>[x,x])],['demandeur','Demandeur','text',''],['obj','Produit / objet','text',''],['prov','Province','select',SCOPE||'Kinshasa',(SCOPE?[SCOPE]:PROVS.map(p=>p[0])).map(x=>[x,x])]],x=>api('POST','/api/amm',x));
+}
+
+/* ====================== Rapports ====================== */
+async function vReports(v){
+  const O=DB.officines;const prov=PROVS.map(p=>{const l=O.filter(o=>o.prov===p[0]);const ok=l.filter(o=>o.statut==='autorisee').length;return[p[0],l.length,ok,l.length?Math.round(ok/l.length*100):0]});
+  const prods=await api('GET','/api/reports/availability');
+  const conf=conflicts().length;
+  v.innerHTML=head('Rapports de conformité et disponibilité','Respect de la règlementation, disponibilité des produits sur le marché, recettes.')+
+  `<div class="row noprint" style="margin-bottom:10px"><div style="flex:0"><button onclick="window.print()">Imprimer / PDF</button></div><div style="flex:0"><button class="alt" id="rcsv">Exporter CSV</button></div></div>
+  <div class="grid g2"><div class="card"><h3>Conformité par province (% officines avec carte valide)</h3><div class="scroll" style="max-height:420px"><table><tr><th>Province</th><th>Officines</th><th>Valides</th><th>Taux</th></tr>${prov.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td><div class="bar" style="width:${r[3]}%;min-width:2px;background:${r[3]>=50?'var(--ac-green)':r[3]>=35?'var(--rdc-yellow)':'var(--rdc-red)'}"></div>${r[3]}%</td></tr>`).join('')}</table></div></div>
+  <div class="card"><h3>Disponibilité des produits (échantillon d’officines)</h3>${bars(prods.sort((a,b)=>a[1]-b[1]),'var(--ac-teal)')}</div>
+  <div class="card"><h3>Synthèse réglementaire</h3><table><tr><td>Conflits de distance d’implantation</td><td><b>${conf}</b></td></tr><tr><td>Déclarations avec alerte de rôle</td><td><b>${DB.decl.filter(d=>roleCheck(d).length).length}</b></td></tr><tr><td>Écarts d’approvisionnement</td><td><b>${DB.decl.filter(d=>d.rec!==null&&d.rec!==d.sent).length}</b></td></tr><tr><td>PV émis / montant</td><td><b>${DB.pv.length} / ${usd(DB.pv.reduce((a,p)=>a+p.total,0))}</b></td></tr><tr><td>Amendes perçues</td><td><b>${usd(DB.pv.filter(p=>p.paid).reduce((a,p)=>a+p.total,0))}</b></td></tr><tr><td>Cartes annuelles (valeur)</td><td><b>${usd(O.filter(o=>o.carte).length*SETTINGS.cardFee)}</b></td></tr></table></div></div>`;
+  $('#rcsv').onclick=()=>dl('conformite_provinces.csv','province,officines,valides,taux\n'+prov.map(r=>r.join(',')).join('\n'));
+}
+
+/* ====================== Sources de données ====================== */
+const ctlTag=d=>d.ctrl?'<br>'+(d.ctrl.ok?tag('DGDA/OCC conforme','ok'):d.ctrl.issues.map(x=>tag(x,'bad')).join('<br>')):'';
+function ctlModal(id){
+  const d=DB.decl.find(x=>x.id===id);
+  openM('<h3>Contrôle DGDA / OCC — '+id+'</h3><div class="sub">Importateur d’origine : <b>'+esc(d.orig)+'</b> · lot '+esc(d.lot)+' · '+esc(PROD[d.prod]?PROD[d.prod][1]:d.prod)+'</div><label>N° de déclaration en douane (DGDA)</label><input id="c_g" value="'+esc(d.dgda_ref||'')+'" placeholder="ex. DGDA-2026-000451"><label>N° de certificat de conformité (OCC)</label><input id="c_o" value="'+esc(d.occ_ref||'')+'" placeholder="ex. OCC-778829"><div class="note">Règles : déclaration trouvée et liquidée, importateur déclaré identique, certificat OCC valide et couvrant le lot. En mode simulation, un numéro finissant par 0 est introuvable, par 3 simule un autre importateur, par 9 un certificat expiré.</div><div id="c_m"></div><button id="c_ok">Vérifier</button>');
+  $('#c_ok').onclick=async()=>{$('#c_m').innerHTML='<div class="note">Interrogation des services…</div>';
+    try{const r=await api('POST','/api/decl/'+id+'/control',{dgda_ref:$('#c_g').value.trim(),occ_ref:$('#c_o').value.trim()});await refresh();
+      const tg=(x,l)=>x?'<tr><td><b>'+l+'</b> '+tag(x.mode==='live'?'réel':'simulation',x.mode==='live'?'ok':'warn')+'</td><td>'+(x.found?tag(x.status,x.status==='liquidee'||x.status==='valide'?'ok':'warn'):tag(x.status||'introuvable','bad'))+(x.importer?'<br><small>Importateur : '+esc(x.importer)+'</small>':'')+(x.cif_usd?'<br><small>Valeur CIF : '+usd(x.cif_usd)+'</small>':'')+(x.expires?'<br><small>Expire : '+esc(x.expires)+'</small>':'')+'</td></tr>':'';
+      $('#c_m').innerHTML='<table>'+tg(r.dgda,'DGDA')+tg(r.occ,'OCC')+'</table>'+(r.ok?msg('Conforme : aucun écart.'):'<div class="err"><b>'+r.issues.length+' écart(s)</b><br>'+r.issues.map(esc).join('<br>')+'</div>')+'<div class="note">Une alerte a été créée pour les agents de la province concernée.</div>';
+      go()}catch(e){$('#c_m').innerHTML=msg(esc(e.message),'err')}}}
+/* Import Excel / CSV */
+const nk=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+const ALIAS={avenues:{prov:['province','prov'],entite:['entite','commune','territoire','secteur'],nom:['avenue','nom','rue']},products:{code:['code','id','n','numero','codelnme','ref'],dci:['dci','denomination','nom','name','medicament','produit'],dosage:['dosage','dose','strength'],forme:['forme','form','formegalenique'],section:['section','classe','class','categorie'],niveau:['niveau','niveaudutilisation'],controle:['controle','controlled','stupefiant']},
+  entities:{nom:['nom','name','importateur','etablissement','raisonsociale','depot'],secteur:['secteur','sector','type'],prov:['province','prov'],role:['role']},
+  officines:{nom:['nom','name','officine','pharmacie'],prov:['province','prov'],entite:['entite','commune','territoire','secteur'],avenue:['avenue','rue','adresse'],pharmacien:['pharmacien'],lat:['lat','latitude'],lon:['lon','lng','longitude']}};
+function mapRows(kind,rows){const al=ALIAS[kind];return rows.map(r=>{const o={},keys=Object.keys(r);for(const f in al){const k=keys.find(k=>al[f].includes(nk(k)));if(k!==undefined&&r[k]!=='')o[f]=r[k]}return o})}
+function vSources(v){
+  v.innerHTML=head('Sources de données & interfaces','Interfaces avec les services publics, données de référence réelles et import Excel / CSV.')+'<div id="srcBody"><div class="sub">Chargement…</div></div>';
+  api('GET','/api/integrations').catch(()=>({providers:[],log:[],data:{lnme:'—',importers:'—'}})).then(I=>{
+    const logRows=I.log.map(l=>'<tr><td>'+new Date(l.ts).toLocaleString('fr-FR')+'</td><td>'+esc(l.provider)+'</td><td>'+esc(l.kind)+'</td><td>'+esc(l.ref)+'</td><td>'+(l.ok?tag('ok','ok'):tag('écart','bad'))+'</td></tr>').join('');
+    $('#srcBody').innerHTML='<div class="grid g2"><div class="card"><h3>Interfaces avec les services publics</h3>'+I.providers.map(p=>'<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px"><b>'+esc(p.nom)+'</b> '+tag(p.mode==='live'?'connecté (réel)':'simulation',p.mode==='live'?'ok':'warn')+'<div style="font-size:13px;margin:4px 0">'+esc(p.role)+'</div><small>Contrat : POST '+esc(p.path)+'</small><div style="margin-top:6px">'+(can('integrations','test')?'<button class="sm alt" data-test="'+p.id+'">Tester la connexion</button>':'')+'</div><div id="t_'+p.id+'"></div></div>').join('')+
+      '<div class="note">Pour passer en mode réel : définir <code>DGDA_URL</code> / <code>DGDA_KEY</code> et <code>OCC_URL</code> / <code>OCC_KEY</code> au démarrage du serveur, une fois les API ouvertes et le contrat validé avec chaque administration. Le contrôle s’utilise depuis « Circuit d’approvisionnement » (bouton Contrôle DGDA/OCC).</div></div>'+
+      '<div class="card"><h3>Données de référence chargées</h3><table><tr><td>Médicaments (LNME 2020, numérotation officielle)</td><td><b>'+I.data.lnme+'</b></td></tr><tr><td>Importateurs de la liste ACOREP</td><td><b>'+I.data.importers+'</b></td></tr><tr><td>Barèmes (classeur Business Plan)</td><td><b>'+'voir « Barèmes & simulateur »'+'</b></td></tr></table><div class="note">Les médicaments proviennent de l’extraction automatique du PDF de la LNME : <b>à valider par la commission</b> (dosages et niveaux d’utilisation). Le registre des AMM (spécialités avec n° d’enregistrement) n’a pas été fourni : il peut être importé ci-dessous.</div></div></div>'+
+      ((can('products','C')||can('officines','C'))?'<div class="card" style="margin-top:14px"><h3>Importer un fichier Excel ou CSV</h3><div class="row"><div><label>Type de données</label><select id="ik">'+(can('products','C')?'<option value="products">Médicaments autorisés (code, DCI, dosage, forme, niveau…)</option><option value="entities">Importateurs / dépôts (nom, secteur, province)</option>':'')+'<option value="officines">Pharmacies d’une région ou d’un secteur (nom, province, entité, avenue, pharmacien, lat, lon)</option><option value="avenues">Avenues d’une commune (province, entité, avenue)</option></select></div><div><label>Fichier</label><input type="file" id="if" accept=".xlsx,.xls,.csv"></div></div><div class="row"><div><label>Province par défaut (si la colonne est absente)</label><select id="dprov">'+((SCOPE&&ROLE!=='verif')?'':'<option value="">—</option>')+(SCOPE?[SCOPE]:PROVS.map(p=>p[0])).map(x=>'<option>'+x+'</option>').join('')+'</select></div><div><label>Entité / secteur par défaut</label><input id="dent" placeholder="ex. Gombe"></div><div><label style="color:var(--ink)"><input type="checkbox" id="dgeo" style="width:auto"> Placer au chef-lieu si les coordonnées manquent (à corriger ensuite)</label></div><div style="flex:0"><button class="alt" id="tpl">Modèle Excel</button></div></div><div id="ip"></div></div>':'')+
+      '<div class="card" style="margin-top:14px"><h3>Journal des interfaces</h3><div class="scroll" style="max-height:220px"><table><tr><th>Date</th><th>Service</th><th>Action</th><th>Référence</th><th>Résultat</th></tr>'+logRows+'</table></div></div>';
+    document.querySelectorAll('[data-test]').forEach(b=>b.onclick=async()=>{try{const r=await api('POST','/api/integrations/'+b.dataset.test+'/test');$('#t_'+b.dataset.test).innerHTML=msg(esc(r.message),r.ok?'okmsg':'err')}catch(e){fail(e)}});
+    const tp=$('#tpl');if(tp)tp.onclick=()=>{if(!window.XLSX)return alert('Bibliothèque Excel indisponible hors ligne');const k=$('#ik').value,H={products:['code','dci','dosage','forme','section','niveau','controle'],entities:['nom','secteur','province'],officines:['nom','province','entite','avenue','pharmacien','lat','lon'],avenues:['province','entite','avenue']}[k];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([H]),'Données');XLSX.writeFile(wb,'modele_'+k+'.xlsx')};
+    const f=$('#if');if(f)f.onchange=async e=>{const file=e.target.files[0];if(!file)return;
+      if(!window.XLSX){$('#ip').innerHTML=msg('Bibliothèque Excel indisponible hors ligne.','err');return}
+      const wb=XLSX.read(await file.arrayBuffer());const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});const kind=$('#ik').value,m=mapRows(kind,rows);m.forEach(r=>{if(kind==='officines'||kind==='avenues'){if(!r.prov&&$('#dprov').value)r.prov=$('#dprov').value;if(!r.entite&&$('#dent').value.trim())r.entite=$('#dent').value.trim();if(kind==='officines'&&$('#dgeo').checked&&(r.lat===undefined||r.lon===undefined)){const p=PROVS.find(x=>x[0]===r.prov);if(p){r.lat=p[3];r.lon=p[4]}}}});
+      const need={products:'dci',entities:'nom',officines:'nom',avenues:'nom'}[kind],ok=m.filter(r=>r[need]);
+      $('#ip').innerHTML='<div class="note">'+rows.length+' ligne(s) lue(s) dans « '+esc(wb.SheetNames[0])+' » — '+ok.length+' exploitable(s). Colonnes reconnues : '+esc(Object.keys(m[0]||{}).join(', ')||'aucune')+'.</div>'+(ok.length?'<div class="scroll" style="max-height:160px"><table>'+ok.slice(0,5).map(r=>'<tr>'+Object.values(r).map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</table></div><button id="ido" style="margin-top:8px">Importer '+ok.length+' ligne(s)</button><div id="idm"></div>':'');
+      const go_=$('#ido');if(go_)go_.onclick=async()=>{try{
+        const url={products:'/api/products/import',entities:'/api/entities/import',officines:'/api/officines/bulk',avenues:'/api/avenues/import'}[kind];
+        const r=await api('POST',url,{rows:kind==='officines'?ok.map(x=>({...x,lat:parseFloat(x.lat),lon:parseFloat(x.lon)})):ok,source:'Excel : '+file.name});
+        await refresh();$('#idm').innerHTML=msg(r.queued?esc(r.message):'Import terminé : '+Object.entries(r).map(([k,v])=>k+' '+v).join(', '))}catch(er){$('#idm').innerHTML=msg(esc(er.message),'err')}}}
+  }).catch(e=>{$('#srcBody').innerHTML=msg(esc(e.message),'err')})}
+
+/* ====================== Signalements ====================== */
+const SIG_LBL={officine_illegale:'Officine non autorisée ou suspecte',plainte:'Plainte',vente_etalage:'Vente sauvage à l’étalage',autre:'Autre'};
+const SIG_ST={recu:['Reçu','info'],en_verification:['En vérification','warn'],confirme:['Confirmé','bad'],non_fonde:['Non fondé','grey'],transmis:['Transmis','info'],classe:['Classé','grey']};
+async function vSignalements(v){
+  let L=[];try{L=await api('GET','/api/signalements')}catch(e){v.innerHTML=head('Signalements','')+msg(esc(e.message),'err');return}
+  const F={st:'',ty:'',pv:'',mine:false};const meP=PERSONAS.find(p=>p.id===PID)||{},secteurList=(meP.secteur||'').split(',').map(s=>s.trim()).filter(Boolean);
+  v.innerHTML=head('Signalements','Officines non autorisées, plaintes et ventes sauvages à l’étalage signalées par le public et par les agents de vérification'+(SCOPE?' — province : '+esc(SCOPE):''))+
+  '<div class="grid g4">'+['recu','en_verification','confirme','transmis'].map(k=>'<div class="card kpi '+(k==='confirme'?'r':k==='recu'?'y':'')+'"><div class="v">'+L.filter(x=>x.status===k).length+'</div><div class="l">'+SIG_ST[k][0]+'</div></div>').join('')+'</div>'+
+  '<div class="card" style="margin-top:14px"><div class="row"><div><label>Statut</label><select id="fs"><option value="">Tous</option>'+Object.keys(SIG_ST).map(k=>'<option value="'+k+'">'+SIG_ST[k][0]+'</option>').join('')+'</select></div><div><label>Type</label><select id="ft"><option value="">Tous</option>'+Object.keys(SIG_LBL).map(k=>'<option value="'+k+'">'+SIG_LBL[k]+'</option>').join('')+'</select></div>'+(SCOPE||ROLE==='verif'?'':'<div><label>Province</label><select id="fp"><option value="">Toutes</option>'+PROVS.map(p=>'<option>'+p[0]+'</option>').join('')+'</select></div>')+(ROLE==='insp'?'<div><label>&nbsp;</label><label style="color:var(--ink)"><input type="checkbox" id="fm" style="width:auto"> Mon secteur / affectés à moi</label></div>':'')+(can('signalements','C')?'<div style="flex:0"><button id="sNew">+ Signaler</button></div>':'')+'</div><div id="slist"></div></div>';
+  const draw=()=>{const R=L.filter(x=>(!F.st||x.status===F.st)&&(!F.ty||x.type===F.ty)&&(!F.pv||x.prov===F.pv)&&(!F.mine||x.assigned_to===PID||secteurList.includes(x.entite)));
+    $('#slist').innerHTML=R.length?'<div class="scroll"><table><tr><th>Réf.</th><th>Type</th><th>Lieu</th><th>Description</th><th>Source</th><th>Statut</th><th></th></tr>'+R.map(x=>'<tr><td>'+esc(x.ref)+'<br><small>'+new Date(x.created).toLocaleDateString('fr-FR')+'</small></td><td>'+esc(SIG_LBL[x.type]||x.type)+'</td><td>'+esc(x.prov)+(x.entite?'<br><small>'+esc(x.entite)+'</small>':'')+(x.officine_nom?'<br><small>'+esc(x.officine_nom)+'</small>':'')+'</td><td>'+esc(x.description.slice(0,110))+(x.description.length>110?'…':'')+'</td><td>'+(x.source==='agent'?tag('Agent','info'):tag('Public','grey'))+'</td><td>'+tag(SIG_ST[x.status][0],SIG_ST[x.status][1])+'</td><td><button class="sm alt" data-sd="'+x.id+'">Ouvrir</button></td></tr>').join('')+'</table></div>':'<div class="sub" style="margin-top:8px">Aucun signalement.</div>';
+    document.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>sigDetail(+b.dataset.sd))};
+  [['fs','st'],['ft','ty'],['fp','pv']].forEach(([i,k])=>{const e=$('#'+i);if(e)e.onchange=()=>{F[k]=e.value;draw()}});const fm=$('#fm');if(fm)fm.onchange=()=>{F.mine=fm.checked;draw()};draw();
+  const n=$('#sNew');if(n)n.onclick=sigModal}
+async function sigDetail(id){
+  try{const x=await api('GET','/api/signalements/'+id);const NEXT={recu:['en_verification','non_fonde','classe'],en_verification:['confirme','non_fonde','classe'],confirme:['transmis','classe'],non_fonde:['classe','en_verification'],transmis:['classe'],classe:['en_verification']};const st=[x.status,...(NEXT[x.status]||[]).filter(k=>ROLE!=='verif'||['en_verification','confirme','non_fonde'].includes(k))];const team=PERSONAS.filter(p=>['insp','dp','verif','dg','dga'].includes(p.role)&&(p.province===x.prov||p.scope==='*'));
+    openM('<h3>'+esc(x.ref)+' — '+esc(SIG_LBL[x.type]||x.type)+'</h3><div>'+tag(SIG_ST[x.status][0],SIG_ST[x.status][1])+' '+(x.source==='agent'?tag('Agent de vérification','info'):tag('Public','grey'))+'</div><dl style="margin:8px 0;display:grid;grid-template-columns:120px 1fr;gap:3px 8px"><dt>Lieu</dt><dd>'+esc(x.prov)+' / '+esc(x.entite||'—')+'</dd><dt>Officine</dt><dd>'+esc(x.nom_libre||x.officine_id||'—')+'</dd><dt>Adresse</dt><dd>'+esc(x.adresse||'—')+'</dd><dt>Produits</dt><dd>'+esc(x.produits||'—')+'</dd><dt>Contact</dt><dd>'+esc(x.contact||(x.anonyme?'(anonyme)':'—'))+'</dd>'+(x.lat?'<dt>Position</dt><dd><a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat='+x.lat+'&mlon='+x.lon+'#map=17/'+x.lat+'/'+x.lon+'">'+x.lat.toFixed(5)+', '+x.lon.toFixed(5)+'</a></dd>':'')+(x.pv_id?'<dt>PV lié</dt><dd>'+esc(x.pv_id)+'</dd>':'')+'</dl><p>'+esc(x.description)+'</p>'+
+     (can('signalements','U')?'<label>Nouveau statut</label><select id="sg_st">'+st.map(k=>'<option value="'+k+'" '+(k===x.status?'selected':'')+'>'+SIG_ST[k][0]+'</option>').join('')+'</select><label>Affecté à (inspecteur du secteur)</label><select id="sg_as"><option value="">— Non affecté —</option>'+team.map(p=>'<option value="'+p.id+'" '+(p.id===x.assigned_to?'selected':'')+'>'+esc(p.nom)+' — '+esc(ROLE_LABELS[p.role]||p.role)+(p.secteur?' ('+esc(p.secteur)+')':'')+'</option>').join('')+'</select><label>Note interne</label><input id="sg_n"><label>Message visible par le déclarant (suivi public)</label><input id="sg_p" value="'+esc(x.note_publique||'')+'">'+(can('pv','C')?'<label>Lier un PV (n°)</label><input id="sg_pv" value="'+esc(x.pv_id||'')+'" placeholder="PV-2026-00001">':'')+'<div style="margin:8px 0"><button id="sg_ok">Enregistrer</button> '+(can('signalements','D')?'<button class="red" id="sg_del">Supprimer</button>':'')+'</div><div id="sg_m"></div>':'')+
+     '<b>Historique</b><table>'+x.events.map(e=>'<tr><td>'+new Date(e.ts).toLocaleString('fr-FR')+'</td><td>'+esc((SIG_ST[e.status]||[e.status])[0])+'</td><td>'+esc(e.note||'')+'</td></tr>').join('')+'</table>');
+    const ok=$('#sg_ok');if(ok)ok.onclick=async()=>{try{await api('PATCH','/api/signalements/'+id,{status:$('#sg_st').value,note:$('#sg_n').value,note_publique:$('#sg_p').value,assigned_to:($('#sg_as').value!==(x.assigned_to||''))?$('#sg_as').value:undefined,pv_id:$('#sg_pv')?$('#sg_pv').value.trim()||undefined:undefined});closeM();go()}catch(e){$('#sg_m').innerHTML=msg(esc(e.message),'err')}};
+    const dl_=$('#sg_del');if(dl_)dl_.onclick=async()=>{if(!confirm('Supprimer ce signalement ?'))return;try{await api('DELETE','/api/signalements/'+id);closeM();go()}catch(e){fail(e)}}
+  }catch(e){fail(e)}}
+
+/* ====================== Barèmes & simulateur (formules du classeur Business Plan ACOREP) ====================== */
+async function vTarifs(v){
+  let D;try{D=await api('GET','/api/tarifs')}catch(e){v.innerHTML=head('Barèmes','')+msg(esc(e.message),'err');return}
+  const P=Object.fromEntries(D.params.map(p=>[p.cle,p.valeur])),pk=k=>{const e=D.params.find(p=>p.cle.toLowerCase().startsWith(k.toLowerCase()));return e?e.valeur:0};
+  let SC='to_be';const canU=can('tarifs','U');
+  const pop=pk('Total Population'),ratio=pk('Pharmacy Ratio'),valid=DB.officines.filter(o=>o.statut==='autorisee'||o.statut==='renouvellement').length;
+  const need=ratio?pop/ratio:0;
+  v.innerHTML=head('Barèmes & simulateur','Tarifs des actes et redevances, quantités annuelles et recettes — mêmes formules que le classeur ACOREP (recette = tarif × quantité).')+
+  '<div class="grid g4"><div class="card kpi g"><div class="v">'+fmt(need)+'</div><div class="l">Besoin théorique en officines (population ÷ ratio '+fmt(ratio)+')</div></div><div class="card kpi"><div class="v">'+fmt(valid)+'</div><div class="l">Officines à carte valide dans E-Pharma</div></div><div class="card kpi y"><div class="v">'+fmt(Math.max(0,need-valid))+'</div><div class="l">Écart à combler (besoin − existantes)</div></div><div class="card kpi r"><div class="v" id="totR">—</div><div class="l" id="totL">Recettes annuelles</div></div></div>'+
+  '<div class="card" style="margin-top:14px"><div class="row noprint"><div><label>Scénario</label><select id="sc"><option value="to_be">Tarifs cibles (To-Be)</option><option value="as_is">Tarifs actuels (As-Is)</option></select></div><div style="flex:0"><button id="xl">⬇ Exporter en Excel (avec formules)</button></div></div><div class="scroll" style="max-height:520px;margin-top:8px"><table id="tt"></table></div></div>'+
+  '<div class="grid g2" style="margin-top:14px"><div class="card"><h3>Paramètres du modèle</h3><div class="scroll" style="max-height:300px"><table>'+D.params.map(p=>'<tr><td>'+esc(p.cle)+'</td><td style="text-align:right"><b>'+fmt(p.valeur)+'</b></td><td><small>'+esc(p.formule?'= '+p.formule:'')+'</small></td><td>'+(canU?'<button class="sm alt" data-pp="'+esc(p.cle)+'">✎</button>':'')+'</td></tr>').join('')+'</table></div></div>'+
+  '<div class="card"><h3>Statistiques des importations '+(D.import_stats?D.import_stats.annee+' ('+esc(D.import_stats.periode)+')':'')+'</h3>'+(D.import_stats?'<table><tr><td>Dossiers examinés</td><td><b>'+fmt(D.import_stats.dossiers_examines)+'</b></td></tr><tr><td>Valeur CIF totale</td><td><b>'+usd(D.import_stats.valeur_cif_usd)+'</b></td></tr><tr><td>Secteur public</td><td>'+fmt(D.import_stats.public.autorisations)+' autorisations · '+usd(D.import_stats.public.cif_usd)+'</td></tr><tr><td>Secteur privé</td><td>'+fmt(D.import_stats.prive.autorisations)+' autorisations · '+usd(D.import_stats.prive.cif_usd)+'</td></tr></table>'+bars(D.import_stats.prive.categories.map(c=>[c.n,c.a]),'var(--rdc-blue)'):'<div class="sub">Non disponible.</div>')+'</div></div>'+
+  '<div class="card" style="margin-top:14px"><h3>Règles de gestion extraites des documents</h3><ul style="margin:0;padding-left:18px"><li><b>Enregistrement</b> d’un produit, <b>retenue annuelle</b>, <b>renouvellement</b>, variations majeures/mineures et duplicata : tarifs distincts par catégorie (médicaments humains, vétérinaires, cosmétiques, aliments, dispositifs médicaux par classe A–D).</li><li><b>Autorisations d’importation</b> : délivrées par dossier examiné, secteur public ou privé (2019 : 2 031 dossiers, 354 M$ CIF).</li><li><b>Étiquetage</b> de conformité : 0,5 $ par unité ; <b>certificat d’usine</b> : 3 000 $ (rétention 2 500 $) ; certificat produit : 140 $.</li><li><b>Implantation</b> : une officine pour 7 000 habitants (ratio de planification) ; en 2019 le répertoire comptait 188 officines pour un besoin théorique de plus de 14 000.</li><li><b>Missions et périodicité</b> (matrice stratégique, articles 3 et 4 du décret) : autoriser et contrôler (AR.4.M.02), examiner les demandes (AR.4.M.05), inspecter les établissements (AR.4.M.06) — court terme 0 à 3 mois, moyen terme 6 à 9 mois, long terme 12 à 18 mois.</li><li><b>Harmonisation avec les services publics</b> (DGDA, OCC) : rapprochement des déclarations en douane et des certificats avec les approvisionnements déclarés (menu Sources de données).</li></ul><div class="note">Tarifs et ratios issus du classeur de travail « Draft BP » : à valider par les actes réglementaires en vigueur.</div></div>';
+  const draw=()=>{let tot=0,cat='';const rows=D.tarifs.map(t=>{const rate=t[SC],rev=rate*t.qty;tot+=rev;
+      const hd=t.categorie!==cat?(cat=t.categorie,'<tr><th colspan="7" style="background:#E3EEE7">'+esc(t.categorie||'Autres')+'</th></tr>'):'';
+      return hd+'<tr><td>'+esc(t.libelle)+(t.sous_type?'<br><small>'+esc(t.sous_type)+'</small>':'')+'</td><td style="text-align:right">'+fmt(t.as_is)+'</td><td style="text-align:right">'+fmt(t.to_be)+'</td><td style="text-align:right">'+fmt(t.qty)+'</td><td style="text-align:right"><b>'+usd(rev)+'</b></td><td>'+(canU?'<button class="sm alt" data-te="'+t.id+'">✎</button>':'')+'</td></tr>'}).join('');
+    $('#tt').innerHTML='<tr><th>Acte / redevance</th><th style="text-align:right">Tarif actuel ($)</th><th style="text-align:right">Tarif cible ($)</th><th style="text-align:right">Quantité / an</th><th style="text-align:right">Recette ('+(SC==='to_be'?'cible':'actuelle')+')</th><th></th></tr>'+rows+'<tr class="tot"><td colspan="4"><b>Total annuel</b></td><td style="text-align:right"><b>'+usd(tot)+'</b></td><td></td></tr>';
+    $('#totR').textContent=usd(tot);$('#totL').textContent='Recettes annuelles — scénario '+(SC==='to_be'?'cible':'actuel');
+    document.querySelectorAll('[data-te]').forEach(b=>b.onclick=()=>{const t=D.tarifs.find(x=>x.id==b.dataset.te);formModal('Modifier : '+t.libelle,[['as_is','Tarif actuel ($)','number',t.as_is],['to_be','Tarif cible ($)','number',t.to_be],['qty','Quantité / an','number',t.qty]],x=>api('PATCH','/api/tarifs/'+t.id,x))})};
+  $('#sc').onchange=e=>{SC=e.target.value;draw()};draw();
+  document.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{const k=b.dataset.pp;formModal('Paramètre : '+k,[['valeur','Valeur','number',P[k]]],x=>api('PATCH','/api/params/'+encodeURIComponent(k),x))});
+  $('#xl').onclick=()=>{
+    if(!window.XLSX){alert('Bibliothèque Excel indisponible hors ligne');return}
+    const wb=XLSX.utils.book_new(),n=D.tarifs.length;
+    const ws=XLSX.utils.aoa_to_sheet([['Catégorie','Libellé','Sous-type','Tarif actuel ($)','Tarif cible ($)','Quantité / an','Recette actuelle ($)','Recette cible ($)'],...D.tarifs.map((t,i)=>[t.categorie,t.libelle,t.sous_type,t.as_is,t.to_be,t.qty,{t:'n',f:'D'+(i+2)+'*F'+(i+2)},{t:'n',f:'E'+(i+2)+'*F'+(i+2)}]),['TOTAL','','','','','',{t:'n',f:'SUM(G2:G'+(n+1)+')'},{t:'n',f:'SUM(H2:H'+(n+1)+')'}]]);
+    XLSX.utils.book_append_sheet(wb,ws,'Barèmes');
+    const pr=[['Paramètre','Valeur'],...D.params.map(p=>[p.cle,p.valeur])],ip=D.params.findIndex(p=>p.cle.toLowerCase().startsWith('total population'))+2,ir=D.params.findIndex(p=>p.cle.toLowerCase().startsWith('pharmacy ratio'))+2;
+    pr.push([],['Besoin théorique en officines',{t:'n',f:'B'+ip+'/B'+ir}],['Officines à carte valide (E-Pharma)',valid],['Écart à combler',{t:'n',f:'B'+(pr.length+1)+'-B'+(pr.length+2)}]);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(pr),'Paramètres');
+    XLSX.writeFile(wb,'E-Pharma_Baremes_et_simulation.xlsx')}
+}
+
+/* ====================== Licences ====================== */
+function vLic(v){
+  const cnt=[DB.officines.filter(o=>o.carte).length,DB.entities.filter(e=>e.autorises[0]==='grossiste').length,DB.entities.filter(e=>e.autorises[0]==='importateur').length,DOCTORS.length*40,30];
+  const mrr=PLANS.reduce((a,p,i)=>a+p[1]*cnt[i],0);
+  v.innerHTML=head('Licences d’utilisation mensuelles','Modèle de revenus de la plateforme : abonnement mensuel par type d’utilisateur (tarifs indicatifs).')+
+  `<div class="card"><table><tr><th>Type d’utilisateur</th><th>Tarif / mois</th><th>Utilisateurs (démo)</th><th>Revenu mensuel</th></tr>${PLANS.map((p,i)=>`<tr><td>${p[0]}</td><td>${usd(p[1])}</td><td>${fmt(cnt[i])}</td><td>${usd(p[1]*cnt[i])}</td></tr>`).join('')}<tr><th colspan="3">Total mensuel (base démo)</th><th>${usd(mrr)}</th></tr></table>
+  <div class="note">Projection sur la base de ${DB.officines.length} officines simulées. Pour 10 000 officines à 15 $/mois : ${usd(10000*15)} / mois (${usd(10000*15*12)} / an), hors cartes annuelles. Chiffres détaillés dans le modèle financier 2027-2031.</div></div>`;
+}
+
+/* ====================== Messagerie ====================== */
+async function vMessages(v){
+  let M={unread:0,items:[]};try{M=await api('GET','/api/messages')}catch(e){v.innerHTML=head('Messagerie','')+msg(esc(e.message),'err');return}
+  v.innerHTML=head('Messagerie','Alertes adressées à votre fonction : signalements de votre secteur, affectations et changements de statut.')+
+  '<div class="card"><div class="row"><b style="flex:1">'+M.unread+' message(s) non lu(s)</b><button class="alt sm" id="mAll">Tout marquer comme lu</button></div><div id="ml">'+(M.items.length?M.items.map(m=>'<div style="border-left:4px solid '+(m.read_ts?'#DCE4DF':'#CE1021')+';padding:8px 10px;margin:8px 0;background:'+(m.read_ts?'#fff':'#FFF8F8')+';border-radius:8px"><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">'+esc(m.subject)+'</b><small>'+new Date(m.created).toLocaleString('fr-FR')+'</small></div><div style="white-space:pre-line;font-size:13px;margin:4px 0">'+esc(m.body)+'</div>'+(m.type==='signalement'&&can('signalements','R')?'<a class="btn sm" href="#signalements">Ouvrir les signalements</a> ':'')+(m.read_ts?'':'<button class="sm alt" data-rd="'+m.id+'">Marquer comme lu</button>')+'</div>').join(''):'<div class="sub">Aucun message.</div>')+'</div></div>';
+  document.querySelectorAll('[data-rd]').forEach(b=>b.onclick=async()=>{try{await api('POST','/api/messages/'+b.dataset.rd+'/read');loadBell();vMessages(v)}catch(e){fail(e)}});
+  $('#mAll').onclick=async()=>{try{await api('POST','/api/messages/read-all');loadBell();vMessages(v)}catch(e){fail(e)}}}
+
+/* ====================== Géolocalisation et cascade province → entité → avenue ====================== */
+const loadEntites=async prov=>{try{return await api('GET','/api/public/entites?prov='+encodeURIComponent(prov))}catch{return [...new Set(DB.officines.filter(o=>o.prov===prov).map(o=>o.entite))]}};
+const loadAvenues=async(prov,ent)=>{try{return await api('GET','/api/public/avenues?prov='+encodeURIComponent(prov)+'&entite='+encodeURIComponent(ent))}catch{return []}};
+function ptInRing(x,y,ring){let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c}
+function geoDetect(lat,lon){let prov=null;
+  if(PROV_GEO)for(const f of PROV_GEO.features){for(const poly of f.geometry.coordinates){if(ptInRing(lon,lat,poly[0])&&!poly.slice(1).some(h=>ptInRing(lon,lat,h))){prov=GEO2FR[f.properties.name]||f.properties.name;break}}if(prov)break}
+  let ent='',bd=1e12;DB.officines.filter(o=>!prov||o.prov===prov).forEach(o=>{const d=hav(lat,lon,o.lat,o.lon);if(d<bd){bd=d;ent=o.entite}});
+  return{prov,entite:bd<15000?ent:'',dist:bd}}
+function geoBlock(p){const pv=(SCOPE&&ROLE!=='verif')?[SCOPE]:PROVS.map(x=>x[0]);
+  return '<label>Province</label><select id="'+p+'_pv">'+pv.map(x=>'<option>'+x+'</option>').join('')+'</select><label>Entité administrative (commune, territoire)</label><input id="'+p+'_en" list="'+p+'_enl" autocomplete="off" placeholder="Choisir dans la liste"><datalist id="'+p+'_enl"></datalist><label>Avenue / rue (liste de la commune)</label><input id="'+p+'_av" list="'+p+'_avl" autocomplete="off" placeholder="Choisir dans la liste ou saisir"><datalist id="'+p+'_avl"></datalist>'+
+  '<div class="row" style="margin-top:6px"><div><label>Latitude</label><input id="'+p+'_la" type="number" step="any"></div><div><label>Longitude</label><input id="'+p+'_lo" type="number" step="any"></div><div style="flex:0;align-self:end"><button type="button" class="alt" id="'+p+'_gps">📍 Ma position</button></div></div><div class="note" id="'+p+'_gs">La position remplit automatiquement la province et l’entité (à corriger si besoin).</div>'}
+async function bindGeo(p){
+  const pv=$('#'+p+'_pv'),en=$('#'+p+'_en'),av=$('#'+p+'_av');
+  const fillA=async()=>{const e=en.value.trim();$('#'+p+'_avl').innerHTML=e?(await loadAvenues(pv.value,e)).map(x=>'<option value="'+esc(x)+'">').join(''):''};
+  const fillE=async()=>{$('#'+p+'_enl').innerHTML=(await loadEntites(pv.value)).map(x=>'<option value="'+esc(x)+'">').join('');await fillA()};
+  pv.onchange=()=>{en.value='';av.value='';fillE()};en.oninput=()=>{av.value='';fillA()};
+  $('#'+p+'_gps').onclick=()=>{if(!navigator.geolocation){$('#'+p+'_gs').textContent='Géolocalisation indisponible.';return}$('#'+p+'_gs').textContent='Localisation…';
+    navigator.geolocation.getCurrentPosition(async pos=>{const la=pos.coords.latitude,lo=pos.coords.longitude;$('#'+p+'_la').value=la.toFixed(6);$('#'+p+'_lo').value=lo.toFixed(6);
+      const d=geoDetect(la,lo);if(d.prov&&[...pv.options].some(o=>o.value===d.prov))pv.value=d.prov;await fillE();if(d.entite){en.value=d.entite;await fillA()}
+      $('#'+p+'_gs').textContent='Position détectée : '+(d.prov||'hors RDC ?')+(d.entite?' / '+d.entite:'')+' — vérifiez et choisissez l’avenue.'},
+      ()=>{$('#'+p+'_gs').textContent='Position refusée ou indisponible : saisissez le lieu manuellement.'},{enableHighAccuracy:true,timeout:12000})};
+  await fillE()}
+function sigModal(){
+  openM('<h3>Nouveau signalement</h3><label>Type</label><select id="sn_t">'+Object.keys(SIG_LBL).map(k=>'<option value="'+k+'">'+SIG_LBL[k]+'</option>').join('')+'</select>'+geoBlock('sn')+'<label>Nom ou repère de l’officine / du lieu</label><input id="sn_n"><label>Description des faits</label><textarea id="sn_d" rows="3" style="width:100%"></textarea><label>Produits concernés</label><input id="sn_pr"><div id="sn_m"></div><div style="margin-top:10px"><button id="sn_ok">Envoyer</button></div>');
+  bindGeo('sn');
+  $('#sn_ok').onclick=async()=>{const b={type:$('#sn_t').value,prov:$('#sn_pv').value,entite:$('#sn_en').value.trim(),avenue:$('#sn_av').value.trim(),nom_libre:$('#sn_n').value.trim(),description:$('#sn_d').value.trim(),produits:$('#sn_pr').value.trim()};
+    if($('#sn_la').value&&$('#sn_lo').value){b.lat=+$('#sn_la').value;b.lon=+$('#sn_lo').value}
+    try{const r=await api('POST','/api/signalements',b);if(r.queued){alert(r.message);closeM();return}await refresh();closeM();go();alert('Signalement '+r.ref+' enregistré et transmis à l’autorité sectorielle.')}catch(e){$('#sn_m').innerHTML=msg(esc(e.message),'err')}}}
+
+/* ====================== Accueil ====================== */
+const MICON={messages:'✉️',signalements:'🚨',tarifs:'🧮',dash:'📊',map:'🗺️',reg:'🪪',products:'💊',supply:'🚚',rx:'📝',pharma:'🏪',insp:'📋',titles:'🔔',reports:'📈',roles:'🔐',sources:'🔌',licences:'💳',imports:'<svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Échange de données"><rect x="3" y="6" width="13" height="13" rx="3"/><rect x="32" y="29" width="13" height="13" rx="3"/><path d="M22 12h18m0 0-5-5m5 5-5 5"/><path d="M26 36H8m0 0 5-5m-5 5 5 5"/><circle cx="9.5" cy="12.5" r="1.4" fill="currentColor"/><circle cx="38.5" cy="35.5" r="1.4" fill="currentColor"/></svg>'};
+const MDESC={messages:'Alertes et messages de votre secteur : signalements, affectations, statuts',signalements:'Officines illégales, plaintes et ventes à l’étalage signalées',tarifs:'Barèmes, paramètres et simulateur de recettes (formules Excel)',dash:'Indicateurs nationaux et alertes',map:'Carte interactive : provinces, villes et statistiques',reg:'Registre des officines et cartes annuelles',products:'Liste des médicaments autorisés',supply:'Importation, dépôts et approvisionnements',rx:'Prescriptions électroniques : imprimer, PDF, envoyer au patient',pharma:'Stock et délivrance par QR code',insp:'Procès-verbaux, amendes et paiement',titles:'Alertes, rappels et cycle de vie des dossiers',reports:'Conformité et disponibilité des produits',roles:'Droits CRUD par profil',sources:'Intégrations et sources de données',licences:'Abonnements mensuels',imports:'Quote-part ACOREP dans les droits DGDA, contrôles OCC, échanges avec les tiers (SYDONIA, SEGUCE) et rétrocession 85/10/5'};
+function vHome(v){
+  const p=PERSONAS.find(x=>x.id===PID);const O=DB.officines;
+  v.innerHTML=head('Bienvenue'+(p?', '+esc(p.nom):''),esc(ROLE_LABELS[ROLE]||ROLE)+(ROLE==='insp'||ROLE==='manager'?(SCOPE?' · périmètre : '+esc(SCOPE):' · périmètre national'):''))+
+  (O.length&&can('officines','R')?'<div class="grid g4" style="margin-bottom:14px"><div class="card kpi g"><div class="v">'+O.length+'</div><div class="l">Officines '+(SCOPE?'de '+esc(SCOPE):'enregistrées')+'</div></div><div class="card kpi y"><div class="v">'+O.filter(o=>o.statut==='renouvellement'||o.statut==='expiree').length+'</div><div class="l">Titres à renouveler ou expirés</div></div><div class="card kpi r"><div class="v">'+O.filter(o=>o.statut==='clandestine').length+'</div><div class="l">Officines non autorisées signalées</div></div><div class="card kpi"><div class="v">'+DB.amm.filter(a=>a.etape<4).length+'</div><div class="l">Dossiers en cours</div></div></div>':'')+
+  '<div class="grid tiles">'+ROLES[ROLE].m.filter(m=>m!=='home').map(m=>'<a class="card tile" href="#'+m+'"><div class="ico">'+MICON[m]+'</div><b>'+esc(MODS[m][0])+'</b><small>'+esc(MDESC[m])+'</small></a>').join('')+'</div>'}
+
+/* ====================== Médicaments autorisés (référentiel) ====================== */
+function vProducts(v){
+  const cC=can('products','C'),cU=can('products','U'),cD=can('products','D');let q='';
+  v.innerHTML=head('Médicaments autorisés','Référentiel des produits autorisés par le régulateur : seuls ces produits peuvent être prescrits, stockés et délivrés.')+
+  '<div class="card"><div class="row"><div><label>Recherche</label><input id="pq" placeholder="Dénomination, classe…"></div>'+(cC?'<div style="flex:0"><button id="pNew">+ Médicament</button></div>':'')+'</div><div id="pt"></div></div>';
+  const draw=()=>{const L=PRODUCTS.filter(p=>!q||(p[0]+' '+p[1]+' '+p[3]).toLowerCase().includes(q));
+    $('#pt').innerHTML='<div class="sub" style="margin-top:8px">'+L.length+' produit(s) — '+PRODUCTS.filter(p=>p[4]).length+' autorisés — liste nationale des médicaments essentiels (numérotation LNME), 250 premières lignes affichées : affinez la recherche</div><div class="scroll"><table><tr><th>Code LNME</th><th>Dénomination</th><th>Forme</th><th>Classe / section</th><th>Niveau</th><th>Statut</th><th>Prescription</th><th></th></tr>'+L.slice(0,250).map(p=>'<tr><td>'+p[0]+'</td><td>'+esc(p[1])+'</td><td>'+esc(p[2])+'</td><td>'+esc(p[3])+'</td><td>'+esc(p[6]||'')+'</td><td>'+(p[4]?tag('Autorisé','ok'):tag('Non autorisé','bad'))+'</td><td>'+(p[5]?tag('Contrôlée','warn'):'')+'</td><td>'+(cU?'<button class="sm alt" data-pu="'+p[0]+'">Modifier</button> ':'')+(cD?'<button class="sm red" data-pdel="'+p[0]+'">Supprimer</button>':'')+'</td></tr>').join('')+'</table></div>';
+    document.querySelectorAll('[data-pu]').forEach(b=>b.onclick=()=>{const p=PROD[b.dataset.pu];formModal('Modifier '+p[1],[['name','Dénomination','text',p[1]],['form','Forme','text',p[2]],['class','Classe','text',p[3]],['authorized','Autorisé par le régulateur','check',p[4]],['controlled','Prescription contrôlée','check',p[5]]],x=>api('PATCH','/api/products/'+p[0],x))});
+    document.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=()=>delRec('products',b.dataset.pdel,'ce médicament'))};
+  $('#pq').oninput=e=>{q=e.target.value.toLowerCase();draw()};draw();
+  const n=$('#pNew');if(n)n.onclick=()=>formModal('Nouveau médicament',[['name','Dénomination et dosage','text',''],['form','Forme','text',''],['class','Classe','text',''],['aliases','Termes de recherche (séparés par des espaces)','text',''],['authorized','Autorisé par le régulateur','check',true],['controlled','Prescription contrôlée','check',false]],x=>api('POST','/api/products',x));
+}
+/* ====================== Rôles & droits ====================== */
+function vRoles(v){
+  const roles=Object.keys(RBAC),res=Object.keys(RES_LABELS);
+  const cell=s=>{if(!s)return '<span class="tag t-grey">aucun accès</span>';const [l,ex]=s.split('+');const col={C:'t-ok',R:'t-info',U:'t-warn',D:'t-bad'};
+    return 'CRUD'.split('').map(c=>l.includes(c)?'<span class="tag '+col[c]+'">'+c+'</span>':'<span style="color:#bbb;font-weight:700;padding:0 6px">·</span>').join(' ')+(ex?'<br><small>+ '+ex.split(',').join(', ')+'</small>':'')};
+  v.innerHTML=head('Rôles & droits (CRUD)','Matrice des droits appliquée par le serveur : C = créer (écrire), R = lire, U = mettre à jour, D = supprimer. Le consommateur est en lecture seule.')+
+  '<div class="card"><div class="scroll" style="max-height:none"><table><tr><th>Ressource</th>'+roles.map(r=>'<th'+(r===ROLE?' style="background:#DDF3E5"':'')+'>'+esc(ROLE_LABELS[r]||r)+(r===ROLE?' (vous)':'')+'</th>').join('')+'</tr>'+
+  res.map(k=>'<tr><td><b>'+esc(RES_LABELS[k])+'</b></td>'+roles.map(r=>'<td'+(r===ROLE?' style="background:#F2FAF5"':'')+'>'+cell(RBAC[r][k])+'</td>').join('')+'</tr>').join('')+'</table></div>'+
+  '<div class="note">Droits spécifiques : <b>card</b> = émettre la carte annuelle · <b>deliver</b> = délivrer une ordonnance · <b>pay</b> = encaisser un PV · <b>advance</b> = faire avancer un dossier.</div></div>'+
+  '<div class="grid g2" style="margin-top:14px"><div class="card"><h3>Règles complémentaires (serveur)</h3><ul style="margin:0;padding-left:18px"><li>Un médecin ne lit, modifie, annule et envoie que <b>ses propres</b> ordonnances.</li><li>Un gestionnaire d’officine ne gère que le stock et les délivrances de <b>son officine</b>.</li><li>Une ordonnance déjà délivrée (même partiellement) ne peut plus être modifiée ni annulée.</li><li>Un PV encaissé ne peut plus être modifié ni supprimé.</li><li>Un médicament utilisé (stock, ordonnances, déclarations) ne peut pas être supprimé : on le marque « non autorisé ».</li><li>Une officine avec historique (délivrances, PV) ne peut pas être supprimée.</li><li>Chaque écriture est tracée dans le journal d’audit avec le profil.</li></ul></div>'+
+  '<div class="card"><h3>Comptes de démonstration</h3><div class="scroll" style="max-height:340px"><table><tr><th>Nom</th><th>Profil</th><th>Province</th></tr>'+PERSONAS.map(p=>'<tr><td>'+esc(p.nom)+'<br><small>'+esc(p.titre)+'</small></td><td>'+esc(ROLE_LABELS[p.role]||p.role)+'</td><td>'+esc(p.province||'')+'</td></tr>').join('')+'</table></div><div class="note">Comptes fictifs : numéros et e-mails factices. En production : annuaire / SSO et authentification forte.</div></div></div>';
+}
+/* ====================== Démarrage ====================== */
+buildRole();
+const h0=location.hash.slice(1);if(MODS[h0])CUR=h0;
+(async()=>{
+  $('#view').innerHTML='<div class="sub">Connexion au serveur…</div>';
+  try{PROV_GEO=await (await fetch('/prov.json')).json();try{PERSONAS=await EP.api('GET','/api/users/demo',null,{})}catch{};buildRole();await refresh();NAV.stack=[CUR];NAV.i=0;go()}
+  catch(e){$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable : '+esc(e.message)+'. Lancez <code>node server.js</code> puis rechargez.</div>'}
+})();
+var _u=document.createElement('script');_u.src='/update.js';document.head.appendChild(_u);
+window.addEventListener('ep-synced',()=>refresh().then(()=>go()).catch(()=>{}));
+setInterval(()=>{if(EP.isOnline())loadBell()},60000);
+</script>
+<script src="/imports-ui.js"></script>
+<script src="/dash-click.js"></script>
+</body>
+</html>

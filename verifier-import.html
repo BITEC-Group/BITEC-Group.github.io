@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0E6B38">
+<title>Vérifier une autorisation d’importation — E-Pharma</title>
+<style>
+:root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.flag{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+header{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:14px 16px}header h1{margin:0;font-size:19px}header small{opacity:.85}
+main{max-width:560px;margin:16px auto;padding:0 16px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+textarea{width:100%;min-height:84px;padding:10px;border:1px solid #BFCBC4;border-radius:10px;font:12px ui-monospace,Consolas,monospace}
+button{margin-top:10px;width:100%;font:inherit;font-weight:600;background:var(--green);color:#fff;border:0;border-radius:10px;padding:12px;cursor:pointer}
+.res{border-radius:14px;padding:16px;color:#fff;margin-bottom:12px}.res h2{margin:0 0 4px;font-size:21px}.AUTHENTIQUE{background:#0E6B38}.FALSIFIE{background:#CE1021;animation:bl 1s infinite}.EXPIRE{background:#C46A00}.NON_ACQUITTE{background:#8A6A00}.FORMAT_INVALIDE{background:#5B6B62}
+@keyframes bl{50%{opacity:.7}}dl{display:grid;grid-template-columns:1fr 1.4fr;gap:4px 10px;margin:0;font-size:14.5px}dt{color:var(--mute)}dd{margin:0;font-weight:600;overflow-wrap:anywhere}.mode{font-size:12.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="flag"></div><header><h1>Vérifier une autorisation d’importation</h1><small>Autorité Congolaise de Réglementation Pharmaceutique — signature numérique ES256</small></header>
+<main>
+<div id="out"></div>
+<div class="card"><label for="tok" style="font-size:13px;color:var(--mute)">Contenu du QR code (lien ou jeton)</label><textarea id="tok" placeholder="https://…/verifier-import.html?t=eyJ… ou eyJ…"></textarea><button id="go">Vérifier</button>
+<div class="mode" id="mode" style="margin-top:8px"></div></div>
+<div class="card" style="font-size:13.5px;color:var(--mute)"><b style="color:var(--ink)">Conduite à tenir</b><br>🟩 <b>Authentique</b> : comparer le NIF et la valeur CAF avec la déclaration SYDONIA et le manifeste.<br>🟥 <b>Falsifié</b> : saisir le document, bloquer le conteneur, alerter la brigade anti-fraude et l’ACOREP.<br>🟧 <b>Expiré</b> : bloquer le dédouanement, exiger un renouvellement.<br>🟨 <b>Non acquitté</b> : suspendre le Bon à Enlever jusqu’au reçu bancaire.</div>
+</main>
+<script src="/config.js"></script>
+<script>
+const API=window.API_BASE||'',$=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const b64=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);return Uint8Array.from(bin,c=>c.charCodeAt(0))};
+async function getKey(){let jwk=null,src='';try{const r=await fetch(API+'/api/v1/public/keys',{cache:'no-store'});if(r.ok){jwk=(await r.json()).jwk;localStorage.setItem('acorep_es256_jwk',JSON.stringify(jwk));src='clé publique chargée en ligne'}}catch{}
+  if(!jwk){try{jwk=JSON.parse(localStorage.getItem('acorep_es256_jwk'));src='clé publique mémorisée (mode hors ligne)'}catch{}}
+  if(!jwk)throw new Error('Clé publique indisponible : ouvrez cette page une première fois avec une connexion.');
+  $('#mode').textContent='Vérification cryptographique locale — '+src;return crypto.subtle.importKey('jwk',{kty:jwk.kty,crv:jwk.crv,x:jwk.x,y:jwk.y},{name:'ECDSA',namedCurve:'P-256'},false,['verify'])}
+async function verify(raw){
+  let t=String(raw||'').trim();try{const u=new URL(t);t=u.searchParams.get('t')||t}catch{}
+  const parts=t.split('.');if(parts.length!==3)return{code:'FORMAT_INVALIDE',msg:'QR code illisible ou corrompu.'};
+  let pl;try{pl=JSON.parse(new TextDecoder().decode(b64(parts[1])))}catch{return{code:'FORMAT_INVALIDE',msg:'QR code illisible ou corrompu.'}}
+  let good=false;try{good=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},await getKey(),b64(parts[2]),new TextEncoder().encode(parts[0]+'.'+parts[1]))}catch(e){return{code:'FORMAT_INVALIDE',msg:e.message}}
+  if(!good||pl.iss!=='ACOREP-RDC')return{code:'FALSIFIE',msg:'ALERTE FRAUDE : signature cryptographique invalide. Document falsifié ou altéré.'};
+  if(pl.exp&&pl.exp*1000<Date.now())return{code:'EXPIRE',msg:'Cette autorisation d’importation a dépassé sa validité.',pl};
+  if(pl.pay!=='ACQUITTE')return{code:'NON_ACQUITTE',msg:'Document authentique mais la quote-part ACOREP n’est pas acquittée.',pl};
+  return{code:'AUTHENTIQUE',msg:'AUTORISATION ACOREP AUTHENTIQUE ET ACQUITTÉE',pl}}
+const usd=n=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2}).format(+n||0)+' $';
+async function run(){const r=await verify($('#tok').value);let live='';
+  if(r.pl&&navigator.onLine){try{const l=await (await fetch(API+'/api/v1/public/verify/'+encodeURIComponent(r.pl.sub),{cache:'no-store'})).json();live='<dt>État du registre</dt><dd>'+esc(l.statut)+(l.valide?'':' — NON VALIDE')+'</dd>'}catch{}}
+  const p=r.pl;$('#out').innerHTML='<div class="res '+r.code+'"><h2>'+({AUTHENTIQUE:'✔ Authentique',FALSIFIE:'✖ Falsifié',EXPIRE:'⚠ Expiré',NON_ACQUITTE:'⚠ Non acquitté',FORMAT_INVALIDE:'? Illisible'}[r.code])+'</h2>'+esc(r.msg)+'</div>'+
+   (p?'<div class="card"><dl><dt>N° d’autorisation</dt><dd>'+esc(p.sub)+'</dd><dt>N° LGU</dt><dd>'+esc(p.lgu)+'</dd><dt>NIF importateur</dt><dd>'+esc(p.nif)+'</dd><dt>Valeur CAF autorisée</dt><dd>'+usd(p.caf)+'</dd><dt>Quote-part ACOREP</dt><dd>'+usd(p.qp)+'</dd><dt>Valable jusqu’au</dt><dd>'+new Date(p.exp*1000).toLocaleDateString('fr-FR')+'</dd><dt>Empreinte des articles</dt><dd>'+esc(p.h_art)+'</dd>'+live+'</dl></div>':'')}
+$('#go').onclick=run;const q=new URLSearchParams(location.search).get('t');if(q){$('#tok').value=q;run()}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+</body>
+</html>

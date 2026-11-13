@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0E6B38">
+<title>Installer E-Pharma</title>
+<style>
+:root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.flag{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+header{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:26px 16px 30px;text-align:center}
+header h1{margin:8px 0 4px;font-size:26px}header p{margin:0;opacity:.88;max-width:620px;margin-inline:auto}
+.logo{width:56px;height:56px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+.demo{background:#FFF3C4;color:#5A4500;font-size:12.5px;text-align:center;padding:4px 8px}
+main{max-width:880px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.reco{border:2px solid var(--green);background:#F5FBF7}
+.tag{display:inline-block;background:var(--green);color:#fff;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;margin-bottom:6px}
+h2{margin:0 0 4px;font-size:19px}h3{margin:0 0 2px;font-size:17px}
+.sub{color:var(--mute);font-size:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:600 16px system-ui;text-decoration:none;cursor:pointer;margin:8px 8px 4px 0}
+.btn.alt{background:#fff;color:var(--green);border:2px solid var(--green)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.url{font:12px ui-monospace,Consolas,monospace;word-break:break-all;color:var(--mute);background:#F3F8F5;border-radius:8px;padding:6px 8px;margin-top:6px}
+.note{background:#FFF8DB;border:1px solid #EBD76A;border-radius:10px;padding:10px;font-size:13.5px;margin:10px 0}
+.steps{margin:8px 0 0;padding-left:20px;font-size:14.5px}
+.copy{font:inherit;font-size:12.5px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 8px;cursor:pointer;margin-left:6px}
+#qr svg{width:150px;height:150px}
+.row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+footer{text-align:center;color:var(--mute);font-size:12.5px;padding:10px 16px 30px}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<header>
+  <div class="logo"><svg width="34" height="34" viewBox="0 0 64 64"><path d="M26 10h12v16h16v12H38v16H26V38H10V26h16z" fill="#0E6B38"/></svg></div>
+  <h1>Installer E-Pharma</h1>
+  <p>Gestion intégrée des officines pharmaceutiques — République démocratique du Congo. Choisissez votre appareil : le lien direct se prépare automatiquement.</p>
+</header>
+<div class="demo">Prototype de démonstration BITEC — non officiel</div>
+<main>
+  <div id="reco"></div>
+  <h2 style="margin:18px 0 8px">Tous les liens directs</h2>
+  <div class="grid" id="all"></div>
+  <h2 style="margin:18px 0 8px">Liens d’accès par appareil</h2>
+  <div class="sub" style="margin-bottom:8px">Un lien et un code QR par type d’appareil : à partager par message ou à afficher. Chaque lien ouvre cette page avec le bon fichier déjà choisi.</div>
+  <div class="grid" id="devs"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="row">
+      <div id="qr"></div>
+      <div style="flex:1;min-width:220px"><h3>Installer sur un autre appareil</h3><div class="sub">Scannez ce code avec le téléphone : la page d’installation s’ouvre et propose le bon fichier.</div><div class="url" id="selfurl"></div></div>
+    </div>
+  </div>
+  <div class="note" id="priv" style="display:none"></div>
+</main>
+<footer>E-Pharma · Pour toute difficulté d’installation, contactez votre administrateur.</footer>
+<script src="/config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const forced=new URLSearchParams(location.search).get('d'),ua=navigator.userAgent,plat=['android','windows','ios','desktop'].includes(forced)?forced:/Android/i.test(ua)?'android':/iPhone|iPad|iPod/i.test(ua)?'ios':/Windows/i.test(ua)?'windows':/Mac|Linux|CrOS/i.test(ua)?'desktop':'other';
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;const b=$('#pwa');if(b)b.style.display=''});
+window.addEventListener('appinstalled',()=>{const b=$('#pwa');if(b)b.textContent='✔ Application installée'});
+const steps={
+ android:['Touchez « Installer sur Android » : le fichier .apk se télécharge.','Ouvrez-le depuis les notifications ou le dossier Téléchargements.','Si Android le demande, autorisez l’installation depuis cette source (Paramètres > Applications installées inconnues).','Touchez Installer, puis Ouvrir. L’application demandera l’autorisation de localisation à la première recherche.'],
+ windows:['Touchez « Télécharger pour Windows » : l’archive .zip se télécharge.','Clic droit sur l’archive > Extraire tout.','Ouvrez le dossier extrait et lancez e_pharma.exe.','Si Windows SmartScreen s’affiche : Informations complémentaires > Exécuter quand même.'],
+ ios:['Pour iPhone et iPad, utilisez l’application web (installable, sans compte) ; l’application native iOS est livrée non signée (TestFlight / App Store après signature Apple).','Ouvrez « Utiliser l’application web » dans Safari.','Touchez le bouton Partager, puis « Sur l’écran d’accueil » : l’icône E-Pharma apparaît comme une application.'],
+ desktop:['Ouvrez « Utiliser l’application web ».','Dans Chrome ou Edge, cliquez sur l’icône « Installer » à droite de la barre d’adresse : l’application s’installe comme une application de bureau.']};
+function card(d,reco){
+  return `<div class="card ${reco?'reco':''}">${reco?'<span class="tag">Recommandé pour votre appareil</span>':''}
+  <h3>${esc(d.label)}</h3><div class="sub">${esc(d.how)}</div>
+  <a class="btn" href="${esc(d.url)}" ${d.platform==='web'||d.platform==='code'?'':'download'}>⬇ ${d.platform==='android'?'Installer sur Android':d.platform==='windows'?'Télécharger pour Windows':'Télécharger'}</a>
+  <div class="url">${esc(d.url)} <button class="copy" data-u="${esc(d.url)}">Copier</button></div>${d.hosted?'':''}</div>`}
+async function init(){
+  const base=location.origin+location.pathname;
+  $('#selfurl').textContent=location.href;
+  const devs=[['android','Android (téléphone, tablette)','📱'],['windows','Windows (ordinateur)','🖥️'],['ios','iPhone / iPad (application web)','🍎'],['desktop','Mac, Linux, Chromebook (application web)','💻']];
+  $('#devs').innerHTML=devs.map(([k,l,i])=>{let svg='';try{const q=qrcode(0,'M');q.addData(base+'?d='+k);q.make();svg=q.createSvgTag({cellSize:3,margin:0,scalable:true})}catch{}
+    return `<div class="card"><h3>${i} ${esc(l)}</h3><div style="width:110px;height:110px;margin:6px 0">${svg.replace('<svg','<svg style="width:110px;height:110px"')}</div><a class="btn alt" href="${esc(base+'?d='+k)}">Ouvrir</a><div class="url">${esc(base+'?d='+k)} <button class="copy" data-u="${esc(base+'?d='+k)}">Copier</button></div></div>`}).join('');
+  try{const q=qrcode(0,'M');q.addData(location.href);q.make();$('#qr').innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch{}
+  let d;try{d=await (await fetch((window.API_BASE||'')+'/api/public/downloads')).json()}catch(e){$('#reco').innerHTML='<div class="card">Liste de téléchargement indisponible : '+esc(e.message)+'</div>';return}
+  const by=Object.fromEntries(d.items.map(i=>[i.platform,i]));
+  const webCard=`<div class="card ${plat==='ios'||plat==='desktop'?'reco':''}">${plat==='ios'||plat==='desktop'?'<span class="tag">Recommandé pour votre appareil</span>':''}
+   <h3>Application web (aucune installation)</h3><div class="sub">S’ouvre directement dans le navigateur ; peut être installée comme une application.</div>
+   <a class="btn" href="${esc(d.app_url)}">Utiliser l’application web</a><button class="btn alt" id="pwa" style="display:none">⬇ Installer comme application</button>
+   <div class="url">${esc(d.app_url)} <button class="copy" data-u="${esc(d.app_url)}">Copier</button></div></div>`;
+  let reco='';
+  if(plat==='android'&&by.android)reco=card(by.android,true);
+  else if(plat==='windows'&&by.windows)reco=card(by.windows,true);
+  else reco=webCard;
+  const st=steps[plat==='android'||plat==='windows'||plat==='ios'?plat:'desktop'];
+  $('#reco').innerHTML=reco+`<div class="card"><h3>Comment installer</h3><ol class="steps">${st.map(x=>'<li>'+esc(x)+'</li>').join('')}</ol></div>`;
+  $('#all').innerHTML=(plat==='android'||plat==='windows'?webCard:'')+d.items.filter(i=>i.platform!=='code'||true).map(i=>card(i,false)).join('');
+  if(d.items.some(i=>!i.hosted)){$('#priv').style.display='';$('#priv').textContent=d.private_repo_notice}
+  document.querySelectorAll('.copy').forEach(b=>b.onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(b.dataset.u);b.textContent='Copié ✔'});
+  const pwa=$('#pwa');if(pwa)pwa.onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}else alert('Ouvrez l’application web, puis utilisez l’icône « Installer » de la barre d’adresse (Chrome, Edge) ou Partager > Sur l’écran d’accueil (Safari).')};
+  if(pwa&&!deferredPrompt)pwa.style.display=''}
+init();
+</script>
+<script src="/update.js"></script>
+</body>
+</html>

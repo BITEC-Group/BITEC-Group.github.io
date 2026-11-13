@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E6B38">
+<title>E-Pharma Mobile</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--green:#0E6B38;--teal:#2BB3B1;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:76px}
+.flag{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+header{background:var(--green);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:1000}
+header b{font-size:18px}header small{display:block;font-size:11px;opacity:.85}
+.hb{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:6px 10px;font-size:17px;font-weight:700}
+.tile{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:14px;padding:14px;margin-bottom:10px;text-decoration:none;color:var(--ink);width:100%;text-align:left}.tile span{font-size:30px}.tile small{display:block;color:var(--mute);font-weight:400}
+.demo{background:#FFF3C4;color:#5A4500;font-size:11.5px;text-align:center;padding:3px 8px}
+main{padding:12px;max-width:640px;margin:auto}
+h2{font-size:18px;margin:4px 0 8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+button{font:inherit;padding:11px 14px;border-radius:12px;border:1px solid var(--green);background:var(--green);color:#fff;font-weight:600}
+button.alt{background:#fff;color:var(--green)}button.blue{background:var(--blue);border-color:var(--blue)}button.block{width:100%}
+button:disabled{opacity:.5}
+input,select,textarea{font:inherit;padding:11px;border:1px solid #BFCBC4;border-radius:12px;width:100%;background:#fff}
+label{display:block;font-size:12.5px;color:var(--mute);margin:8px 0 3px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
+.ok{background:#DDF3E5;color:#0A6B33}.warn{background:#FBEFC8;color:#7A5600}.bad{background:#FBDADD;color:#9D0B19}.info{background:#D9EBFF;color:#004A99}
+.item{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
+.item .m{flex:1}.item .m small{color:var(--mute)}.item .d{text-align:right;font-weight:700;white-space:nowrap}
+.verdict{border-radius:16px;padding:18px;text-align:center;color:#fff;margin:10px 0}
+.verdict h3{margin:6px 0;font-size:22px}.verdict.v-ok{background:var(--green)}.verdict.v-no{background:var(--red)}.verdict.v-unk{background:#6b5a00}
+.err{background:#FDE6E8;border:1px solid #F0A5AC;color:#7D0913;border-radius:10px;padding:9px;margin:8px 0}
+.okm{background:#E3F5EA;border:1px solid #9AD7B1;color:#0A5A2B;border-radius:10px;padding:9px;margin:8px 0}
+.note{font-size:12.5px;color:var(--mute);margin:8px 0}
+#map{height:260px;border-radius:14px;margin-bottom:10px}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid var(--green);display:flex;z-index:1000;padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{flex:1;border:0;border-radius:0;background:#fff;color:var(--mute);font-size:11.5px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs button span{font-size:21px}.tabs button.on{color:var(--green);background:#EAF2ED}
+video{width:100%;border-radius:12px;background:#000}
+a.btn{display:inline-block;text-decoration:none;padding:8px 12px;border-radius:10px;background:var(--blue);color:#fff;font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<header>
+  <button id="mBack" class="hb" title="Retour" style="display:none">←</button><button id="mHome" class="hb" title="Accueil">🏠</button>
+  <svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff"/><path d="M26 14h12v12h12v12H38v12H26V38H14V26h12z" fill="#0E6B38"/><path d="M14 52 Q32 44 52 22" fill="none" stroke="#CE1021" stroke-width="4" stroke-linecap="round"/><path d="M18 56 Q36 50 56 30" fill="none" stroke="#F7D618" stroke-width="3" stroke-linecap="round"/></svg>
+  <div><b>E-Pharma</b><small>Pharmacies agréées · Médicaments autorisés</small></div>
+</header>
+<div class="demo">Prototype de démonstration BITEC — données fictives, non officiel</div>
+<main id="v"></main>
+<nav class="tabs" id="tabs"></nav>
+
+<script src="/config.js"></script>
+<script src="/offline.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const km=m=>m<1000?m+' m':(m/1000).toFixed(m<10000?1:0)+' km';
+const safe=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch{return null}};
+let ROLE='pharma',LOC=safe('ep_loc'),REF=null,TAB='home',MAP=null;
+let USER='',UID='',PROVGEO=null,BOOT=null,LOCAL={catalog:[],officines:[]};
+async function api(m,u,b,role){
+  const r=role||ROLE;const o={role:r==='x'?undefined:r,user:r==='x'?undefined:USER,uid:r==='x'?undefined:UID,label:({'POST /api/pv':'Nouveau PV','POST /api/pv/*/pay':'Encaissement PV'}[m+' '+u]||m+' '+u.replace('/api/',''))};
+  if(u==='/api/rx/verify'){o.noQueue=true;o.offline=async()=>{                // vérification hors ligne à partir des ordonnances déjà chargées
+    const id=(String(b.payload).match(/RX-\d{4}-\d{6}/)||[])[0],x=BOOT&&BOOT.rx.find(z=>z.id===id);if(!x)throw Object.assign(new Error('Hors ligne : ordonnance inconnue de cet appareil'),{offline:true});
+    const p=String(b.payload).split('|');if(p.length>3&&p[3]!==x.sig)throw new Error('Signature invalide : ordonnance altérée ou falsifiée');return x}}
+  if(/\/paylink$/.test(u))o.noQueue=true;
+  return EP.api(m,u,b,o)}
+const GEO2FR={'Upper Uele':'Haut-Uele','Lower Uele':'Bas-Uele','North Kivu':'Nord-Kivu','South Kivu':'Sud-Kivu','Central Kasai':'Kasaï-Central','Kasai':'Kasaï','Kasai-Oriental':'Kasaï-Oriental'};
+const SIGN={recu:['en_verification','non_fonde','classe'],en_verification:['confirme','non_fonde','classe'],confirme:['transmis','classe'],non_fonde:['classe','en_verification'],transmis:['classe'],classe:['en_verification']};
+const ptIn=(x,y,r)=>{let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c};
+function geoDetect(lat,lon){let prov=null;if(PROVGEO)for(const f of PROVGEO.features){for(const p of f.geometry.coordinates){if(ptIn(lon,lat,p[0])&&!p.slice(1).some(h=>ptIn(lon,lat,h))){prov=GEO2FR[f.properties.name]||f.properties.name;break}}if(prov)break}
+  let ent='',bd=1e12;LOCAL.officines.filter(o=>!prov||o.prov===prov).forEach(o=>{const d=hav(lat,lon,o.lat,o.lon);if(d<bd){bd=d;ent=o.entite}});return{prov,entite:bd<15000?ent:''}}
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9µ ]+/g,' ').replace(/\s+/g,' ').trim();
+const hav=(a,b,c,d)=>{const R=6371000,t=x=>x*Math.PI/180,dl=t(c-a),dg=t(d-b),k=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(k))};
+const qrSvg=(text,size=180)=>{try{const q=qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:3,margin:0,scalable:true}).replace('<svg','<svg style="width:'+size+'px;height:'+size+'px"')}catch{return ''}};
+const offBanner=()=>EP.isOnline()?'':'<div class="note" style="background:#FFF3C4;padding:6px 8px;border-radius:8px">Mode hors ligne : données enregistrées sur votre téléphone lors de la dernière connexion.</div>';
+/* Données publiques conservées sur l'appareil : fonctionnement sans connexion */
+async function loadLocal(){try{LOCAL.catalog=await EP.api('GET','/api/public/catalog',null,{})}catch{}try{LOCAL.officines=await EP.api('GET','/api/public/officines',null,{})}catch{}}
+async function nearbyData(){
+  try{return await api('GET','/api/public/nearby?lat='+LOC.lat+'&lon='+LOC.lon+'&r='+RAD+'&limit=40',null,'x')}
+  catch(e){if(!LOCAL.officines.length)throw e;
+    return LOCAL.officines.map(o=>({...o,distance:Math.round(hav(LOC.lat,LOC.lon,o.lat,o.lon))})).filter(o=>o.distance<=RAD).sort((a,b)=>a.distance-b.distance).slice(0,40)}}
+function medLocal(q){const t=norm(q);return LOCAL.catalog.filter(p=>(norm(p.name)+' '+norm(p.aliases)).includes(t)).slice(0,15).map(({aliases,...p})=>p)}
+async function medData(q){if(LOCAL.catalog.length)return medLocal(q);return api('GET','/api/public/medicines?q='+encodeURIComponent(q),null,'x')}
+async function checkData(q){
+  try{return await api('GET','/api/public/check?q='+encodeURIComponent(q),null,'x')}
+  catch(e){if(!LOCAL.catalog.length)throw e;
+    const t=norm(q),m=LOCAL.catalog.filter(p=>{const n=norm(p.name)+' '+norm(p.aliases);return n.includes(t)||t.split(' ').every(w=>w.length>2&&n.includes(w))}).map(({aliases,...p})=>p);
+    const au=m.filter(p=>p.authorized),no=m.filter(p=>!p.authorized);
+    return{query:q,status:no.length&&!au.length?'non_autorise':au.length?(no.length?'partiel':'autorise'):'inconnu',matches:m.slice(0,10)}}}
+const docLink=(t,id)=>'/print.html?t='+t+'&id='+encodeURIComponent(id)+'&r='+ROLE+'&u='+encodeURIComponent(USER);
+const TABS=[['home','🏠','Accueil'],['near','📍','Près de moi'],['med','💊','Médicament'],['check','✔️','Vérifier'],['report','🚨','Signaler'],['pro','🩺','Pro']];
+let TABH=['home'];
+function go(tab,push=true){if(push&&TABH[TABH.length-1]!==tab)TABH.push(tab);TAB=tab;render()}
+function back(){if(TABH.length>1){TABH.pop();go(TABH[TABH.length-1],false)}else go('home',false)}
+function tabs(){$('#tabs').innerHTML=TABS.map(t=>'<button class="'+(t[0]===TAB?'on':'')+'" data-t="'+t[0]+'"><span>'+t[1]+'</span>'+t[2]+'</button>').join('');
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{if(b.dataset.t==='home')TABH=['home'];go(b.dataset.t)});
+  $('#mBack').style.display=TABH.length>1&&TAB!=='home'?'':'none'}
+$('#mBack').onclick=back;$('#mHome').onclick=()=>{TABH=['home'];go('home')};
+function render(){tabs();if(MAP){MAP.remove();MAP=null}stopCam();({home:vHome,near:vNear,med:vMed,check:vCheck,report:vReport,pro:vPro})[TAB]($('#v'));window.scrollTo(0,0)}
+function vHome(v){
+  const T=[['near','📍','Pharmacies près de moi','Trouvez les pharmacies agréées autour de vous'],['med','💊','Trouver un médicament','Disponibilité en stock dans les pharmacies proches'],['check','✔️','Vérifier un médicament','Est-il autorisé par le régulateur ?'],['report','🚨','Signaler une officine ou une vente illégale','Officine suspecte, plainte, vente à l’étalage'],['pro','🩺','Espace professionnel','Pharmaciens et inspecteurs : délivrance, PV, paiement']];
+  v.innerHTML='<h2>Bienvenue sur E-Pharma</h2><div class="note">Application utilisable sans connexion : vos données sont enregistrées sur l’appareil et synchronisées automatiquement au retour du réseau.</div>'+offBanner()+T.map(x=>'<button class="tile" data-go="'+x[0]+'"><span>'+x[1]+'</span><div><b>'+x[2]+'</b><small>'+x[3]+'</small></div></button>').join('');
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go))}
+
+/* ---------- Localisation ---------- */
+function locBox(cb){
+  return `<div class="card"><div class="row"><button id="gps" class="blue">📍 Me localiser</button></div>
+  <label>ou choisir une ville</label><select id="city"><option value="">— Ville —</option>${(REF?REF.provs:[]).map(p=>`<option value="${p.lat},${p.lon},${esc(p.city)}">${esc(p.city)} (${esc(p.n)})</option>`).join('')}</select>
+  <div class="note" id="locst">${LOC?'Position : '+esc(LOC.label||'GPS')+' ('+LOC.lat.toFixed(3)+', '+LOC.lon.toFixed(3)+')':'Position non définie. Votre position reste sur votre appareil et n’est utilisée que pour calculer les distances.'}</div></div>`}
+function bindLoc(cb){
+  $('#gps').onclick=()=>{if(!navigator.geolocation){$('#locst').textContent='Géolocalisation indisponible : choisissez une ville.';return}
+    $('#locst').textContent='Localisation en cours…';
+    navigator.geolocation.getCurrentPosition(p=>{LOC={lat:p.coords.latitude,lon:p.coords.longitude,label:'GPS'};safe('ep_loc',LOC);cb()},
+      e=>{$('#locst').textContent='Impossible d’obtenir la position ('+(e.code===1?'permission refusée':'indisponible')+'). Choisissez une ville.'},{enableHighAccuracy:true,timeout:12000})};
+  $('#city').onchange=e=>{if(!e.target.value)return;const [la,lo,l]=e.target.value.split(',');LOC={lat:+la,lon:+lo,label:l};safe('ep_loc',LOC);cb()}}
+const dirLink=(o)=>`https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lon}`+(LOC?`&origin=${LOC.lat},${LOC.lon}`:'');
+
+/* ---------- Pharmacies proches ---------- */
+let RAD=5000;
+function vNear(v){
+  v.innerHTML=`<h2>Pharmacies agréées près de moi</h2>${locBox()}<div id="nres"></div>`;bindLoc(()=>vNear(v));
+  if(!LOC)return;
+  $('#nres').innerHTML=`<div class="card"><label>Rayon</label><select id="rad">${[1000,3000,5000,10000,25000].map(r=>`<option value="${r}" ${r===RAD?'selected':''}>${km(r)}</option>`).join('')}</select></div><div id="map"></div><div class="card" id="nl">Recherche…</div>`;
+  $('#rad').onchange=e=>{RAD=+e.target.value;vNear(v)};
+  nearbyData().then(L=>{
+    MAP=L_map(L);
+    $('#nl').innerHTML=L.length?L.map(o=>`<div class="item"><div class="m"><b>${esc(o.nom)}</b><br><small>${esc(o.prov)} · ${esc(o.entite)}<br>Agrément valide jusqu’au ${esc(o.expiration)}</small></div><div class="d">${km(o.distance)}<br><a class="btn" target="_blank" rel="noopener" href="${dirLink(o)}">Itinéraire</a></div></div>`).join(''):'<div class="note">Aucune pharmacie agréée trouvée dans ce rayon. Augmentez le rayon.</div>'
+  }).catch(e=>$('#nl').innerHTML='<div class="err">'+esc(e.message)+'</div>')}
+function L_map(list,extra){
+  const m=L.map('map').setView([LOC.lat,LOC.lon],13);
+  epTileLayer().addTo(m);
+  L.circleMarker([LOC.lat,LOC.lon],{radius:8,color:'#fff',weight:2,fillColor:'#007FFF',fillOpacity:1}).bindTooltip('Vous êtes ici').addTo(m);
+  const pts=[[LOC.lat,LOC.lon]];
+  list.forEach(o=>{L.circleMarker([o.lat,o.lon],{radius:8,color:'#fff',weight:2,fillColor:'#0E6B38',fillOpacity:1}).bindPopup(`<b>${esc(o.nom)}</b><br>${km(o.distance)}<br><a target="_blank" rel="noopener" href="${dirLink(o)}">Itinéraire</a>`).addTo(m);pts.push([o.lat,o.lon])});
+  if(pts.length>1)m.fitBounds(pts,{padding:[24,24],maxZoom:15});setTimeout(()=>m.invalidateSize(),50);return m}
+
+/* ---------- Trouver un médicament ---------- */
+function vMed(v){
+  v.innerHTML=`<h2>Trouver un médicament en stock</h2>${locBox()}<div class="card"><label>Nom du médicament</label><input id="mq" placeholder="ex. paracétamol, artéméther, insuline…" autocomplete="off"><div id="sug"></div></div><div id="mres"></div>`;bindLoc(()=>vMed(v));
+  let tm;$('#mq').oninput=e=>{clearTimeout(tm);tm=setTimeout(async()=>{const q=e.target.value.trim();if(q.length<2){$('#sug').innerHTML='';return}
+    try{const L=await medData(q);
+      $('#sug').innerHTML=L.length?L.map(p=>`<div class="item"><div class="m"><b>${esc(p.name)}</b><br><small>${esc(p.form)} · ${esc(p.class)}${p.controlled?' · prescription obligatoire':''}</small></div><div class="d">${p.authorized?`<button class="sm" data-p="${p.id}">Chercher</button>`:'<span class="tag bad">Non autorisé</span>'}</div></div>`).join(''):'<div class="note">Aucun résultat dans la liste. Utilisez l’onglet « Vérifier ».</div>';
+      document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>stockSearch(b.dataset.p))}catch(er){$('#sug').innerHTML='<div class="err">'+esc(er.message)+'</div>'}},250)}}
+async function stockSearch(pid){
+  if(!LOC){$('#mres').innerHTML='<div class="err">Définissez d’abord votre position (bouton ci-dessus ou ville).</div>';return}
+  $('#mres').innerHTML='<div class="card">Recherche en cours…</div>';
+  try{const r=await api('GET',`/api/public/stock?pid=${pid}&lat=${LOC.lat}&lon=${LOC.lon}&r=30000`,null,'x');
+    $('#mres').innerHTML=`<div class="card"><b>${esc(r.product.name)}</b> <small>${esc(r.product.form)}</small>${r.product.controlled?'<div class="note">⚠ Médicament soumis à prescription : présentez une ordonnance électronique (QR).</div>':''}</div><div id="map"></div><div class="card">${r.results.length?r.results.map(o=>`<div class="item"><div class="m"><b>${esc(o.nom)}</b><br><small>${esc(o.prov)} · ${esc(o.entite)}</small><br><span class="tag ${o.niveau==='disponible'?'ok':'warn'}">${o.niveau==='disponible'?'Disponible':'Stock limité'}</span></div><div class="d">${km(o.distance)}<br><a class="btn" target="_blank" rel="noopener" href="${dirLink(o)}">Itinéraire</a></div></div>`).join(''):'<div class="note">Aucune pharmacie agréée n’a ce produit en stock dans un rayon de 30 km.</div>'}<div class="note">Les stocks sont déclarés par les pharmacies : appelez avant de vous déplacer.</div></div>`;
+    if(r.results.length)MAP=L_map(r.results);else{const m=$('#map');m&&m.remove()}
+  }catch(e){$('#mres').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+
+/* ---------- Vérifier un médicament ---------- */
+function vCheck(v){
+  v.innerHTML=`<h2>Ce médicament est-il autorisé ?</h2><div class="card"><label>Nom ou dénomination (DCI, dosage)</label><input id="cq" placeholder="ex. tramadol 225, paracétamol sirop…"><div style="margin-top:8px"><button class="block" id="cgo">Vérifier</button></div></div><div id="cres"></div>`;
+  const go=async()=>{const q=$('#cq').value.trim();if(q.length<2)return;
+    try{const r=await checkData(q);
+      const cls={autorise:'v-ok',partiel:'v-ok',non_autorise:'v-no',inconnu:'v-unk'}[r.status];
+      const ttl={autorise:'✔ Autorisé',partiel:'✔ Autorisé (certaines présentations seulement)',non_autorise:'✖ NON autorisé',inconnu:'? Introuvable dans la base'}[r.status];
+      const sub={autorise:'Ce produit figure parmi les médicaments autorisés par le régulateur.',partiel:'Vérifiez précisément la forme et le dosage.',non_autorise:'Ne l’utilisez pas et signalez-le au régulateur.',inconnu:'Impossible de confirmer. Ne l’utilisez pas sans avis d’un pharmacien.'}[r.status];
+      $('#cres').innerHTML=`<div class="verdict ${cls}"><h3>${ttl}</h3><div>${sub}</div></div>`+(r.matches.length?`<div class="card">${r.matches.map(p=>`<div class="item"><div class="m"><b>${esc(p.name)}</b><br><small>${esc(p.form)} · ${esc(p.class)}${p.controlled?' · prescription obligatoire':''}</small></div><div class="d"><span class="tag ${p.authorized?'ok':'bad'}">${p.authorized?'Autorisé':'Non autorisé'}</span></div></div>`).join('')}</div>`:'')+`<div class="note">Cette vérification porte sur la liste des produits autorisés. Elle ne garantit pas l’authenticité d’un lot précis (contrefaçon). Liste de démonstration.</div>`;
+    }catch(e){$('#cres').innerHTML='<div class="err">'+esc(e.message)+'</div>'}};
+  $('#cgo').onclick=go;$('#cq').onkeydown=e=>{if(e.key==='Enter')go()}}
+
+/* ---------- Signalements : public et agents de vérification ---------- */
+function sigForm(agent){
+  const provs=(REF&&REF.provs)||[];
+  return '<div class="card"><label>Type de signalement</label><select id="sg_t"><option value="officine_illegale">Officine non autorisée ou suspecte</option><option value="vente_etalage">Vente sauvage de produits pharmaceutiques à l’étalage</option><option value="plainte">Plainte sur une officine, un produit ou un service</option><option value="autre">Autre</option></select>'+
+  '<label>Province</label><select id="sg_p">'+provs.map(p=>'<option>'+esc(p.n)+'</option>').join('')+'</select><label>Entité administrative (commune, territoire, quartier)</label><input id="sg_e" list="sg_el" autocomplete="off"><datalist id="sg_el"></datalist>'+
+  '<label>Avenue / rue (liste de la commune)</label><input id="sg_av" list="sg_avl" autocomplete="off" placeholder="Choisir dans la liste ou saisir"><datalist id="sg_avl"></datalist><label>Officine concernée (si elle est enregistrée)</label><select id="sg_o"><option value="">— Non listée ou inconnue —</option></select><label>Nom ou repère (enseigne, marché, avenue…)</label><input id="sg_n">'+
+  '<label>Description des faits</label><textarea id="sg_d" rows="3" placeholder="Que s’est-il passé ? Que vend-on, où, depuis quand ?"></textarea><label>Produits concernés (facultatif)</label><input id="sg_pr">'+
+  '<div class="row" style="margin-top:8px"><button class="alt" id="sg_gps">📍 Ajouter ma position</button></div><div class="note" id="sg_gs"></div><input id="sg_w" style="position:absolute;left:-9999px" tabindex="-1" autocomplete="off" aria-hidden="true">'+
+  (agent?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="sg_a" style="width:22px;height:22px"> Rester anonyme</label><div id="sg_cw"><label>Contact (facultatif)</label><input id="sg_c" placeholder="Téléphone ou e-mail"></div>')+
+  '<div style="margin-top:8px"><button class="block" id="sg_ok">Envoyer le signalement</button></div><div id="sg_m"></div></div>'}
+function bindSigForm(agent){
+  let pos=null;
+  const fillEnt=async()=>{const p=$('#sg_p').value;let L=[];
+    try{L=await api('GET','/api/public/entites?prov='+encodeURIComponent(p),null,'x')}catch{L=[...new Set(LOCAL.officines.filter(o=>o.prov===p).map(o=>o.entite))]}
+    $('#sg_el').innerHTML=L.map(x=>'<option value="'+esc(x)+'">').join('');fillOff()};
+  const fillOff=()=>{const p=$('#sg_p').value,e=norm($('#sg_e').value);const L=LOCAL.officines.filter(o=>o.prov===p&&(!e||norm(o.entite).includes(e))).slice(0,80);
+    $('#sg_o').innerHTML='<option value="">— Non listée ou inconnue —</option>'+L.map(o=>'<option value="'+o.id+'">'+esc(o.nom)+' — '+esc(o.entite)+'</option>').join('')};
+  const fillAv=async()=>{const p=$('#sg_p').value,e=$('#sg_e').value.trim();let L=[];if(e){try{L=await api('GET','/api/public/avenues?prov='+encodeURIComponent(p)+'&entite='+encodeURIComponent(e),null,'x')}catch{}}$('#sg_avl').innerHTML=L.map(x=>'<option value="'+esc(x)+'">').join('')};
+  $('#sg_p').onchange=async()=>{$('#sg_e').value='';$('#sg_av').value='';await fillEnt();fillAv()};$('#sg_e').oninput=()=>{fillOff();$('#sg_av').value='';fillAv()};fillEnt();
+  if(LOC&&REF&&REF.provs){let b=null,bd=1e12;REF.provs.forEach(p=>{const d=hav(LOC.lat,LOC.lon,p.lat,p.lon);if(d<bd){bd=d;b=p}});if(b){$('#sg_p').value=b.n;fillEnt()}}
+  $('#sg_gps').onclick=()=>{if(!navigator.geolocation){$('#sg_gs').textContent='Position indisponible : choisissez la province et l’entité.';return}$('#sg_gs').textContent='Localisation…';
+    navigator.geolocation.getCurrentPosition(async p=>{pos={lat:p.coords.latitude,lon:p.coords.longitude};const d=geoDetect(pos.lat,pos.lon);
+      if(d.prov&&[...$('#sg_p').options].some(o=>o.value===d.prov)){$('#sg_p').value=d.prov;await fillEnt()}
+      if(d.entite){$('#sg_e').value=d.entite;fillOff();await fillAv()}
+      $('#sg_gs').textContent='Position détectée : '+(d.prov||'province inconnue')+(d.entite?' / '+d.entite:'')+' — vérifiez, puis choisissez l’avenue.'},
+      ()=>{$('#sg_gs').textContent='Position refusée ou indisponible : le signalement reste valable sans position.'},{enableHighAccuracy:true,timeout:12000})};
+  if(!agent)$('#sg_a').onchange=e=>{$('#sg_cw').style.display=e.target.checked?'none':''};
+  $('#sg_ok').onclick=async()=>{
+    const body={type:$('#sg_t').value,prov:$('#sg_p').value,entite:$('#sg_e').value.trim(),avenue:$('#sg_av').value.trim(),officine_id:$('#sg_o').value||undefined,nom_libre:$('#sg_n').value.trim(),description:$('#sg_d').value.trim(),produits:$('#sg_pr').value.trim(),website:$('#sg_w').value,...(pos||{})};
+    if(!agent){body.anonyme=$('#sg_a').checked;body.contact=$('#sg_c').value.trim()}
+    if(body.description.length<10){$('#sg_m').innerHTML='<div class="err">Décrivez la situation (au moins 10 caractères).</div>';return}
+    $('#sg_ok').disabled=true;
+    try{const r=await (agent?api('POST','/api/signalements',body):api('POST','/api/public/reports',body,'x'));
+      if(r.queued){$('#sg_m').innerHTML='<div class="okm">'+esc(r.message)+' La référence et le code de suivi vous seront communiqués après l’envoi.</div>';return}
+      if(!agent){const L=safe('ep_reports')||[];L.push({ref:r.ref,code:r.code,ts:Date.now()});safe('ep_reports',L)}
+      $('#sg_m').innerHTML='<div class="okm"><b>Signalement enregistré.</b><br>Référence : <b>'+esc(r.ref)+'</b>'+(agent?'':'<br>Code de suivi : <b>'+esc(r.code)+'</b><br><small>Conservez-les pour suivre le traitement.</small>')+'</div>';
+      if(agent)setTimeout(()=>render(),1500)}
+    catch(e){$('#sg_ok').disabled=false;$('#sg_m').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}}
+function vReport(v){
+  v.innerHTML='<h2>Signaler</h2><div class="note">Signalez une officine suspecte, déposez une plainte ou dénoncez une vente sauvage de produits pharmaceutiques à l’étalage. Vous pouvez rester anonyme. Fonctionne aussi sans connexion : le signalement est envoyé dès que le réseau revient.</div>'+offBanner()+sigForm(false)+'<h2>Suivre un signalement</h2><div class="card"><div class="row"><input id="tr_r" placeholder="SIG-2026-000001"><input id="tr_c" placeholder="Code de suivi" style="max-width:130px"></div><div style="margin-top:8px"><button class="block alt" id="tr_go">Voir l’état</button></div><div id="tr_o"></div></div><div id="tr_l"></div>';
+  bindSigForm(false);
+  const show=async(ref,code)=>{try{const s=await api('GET','/api/public/reports/'+encodeURIComponent(ref)+'?code='+encodeURIComponent(code),null,'x');
+      const lbl={recu:'Reçu',en_verification:'En vérification',confirme:'Confirmé',non_fonde:'Non fondé',transmis:'Transmis aux services compétents',classe:'Classé'};
+      $('#tr_o').innerHTML='<div class="okm"><b>'+esc(s.ref)+'</b> — '+esc(s.type)+'<br>'+esc(s.prov)+(s.entite?' / '+esc(s.entite):'')+'<br>État : <b>'+esc(lbl[s.status]||s.status)+'</b>'+(s.note?'<br>'+esc(s.note):'')+'<br><small>Mis à jour le '+new Date(s.updated).toLocaleString('fr-FR')+'</small></div>'}
+    catch(e){$('#tr_o').innerHTML='<div class="err">'+esc(e.message)+'</div>'}};
+  $('#tr_go').onclick=()=>show($('#tr_r').value.trim().toUpperCase(),$('#tr_c').value.trim());
+  const L=(safe('ep_reports')||[]).slice(-5).reverse();
+  $('#tr_l').innerHTML=L.length?'<div class="card"><b>Mes signalements sur cet appareil</b>'+L.map(x=>'<div class="item"><div class="m">'+esc(x.ref)+'<br><small>code '+esc(x.code)+'</small></div><div class="d"><button class="alt" data-tr="'+esc(x.ref)+'|'+esc(x.code)+'">État</button></div></div>').join('')+'</div>':'';
+  document.querySelectorAll('[data-tr]').forEach(b=>b.onclick=()=>{const [r,c]=b.dataset.tr.split('|');$('#tr_r').value=r;$('#tr_c').value=c;show(r,c)})}
+async function inbox(){
+  const el=document.getElementById('inbox');if(!el)return;
+  try{const M=await api('GET','/api/messages');
+    el.innerHTML='<div class="card"><b>✉ Messagerie</b> <span class="tag '+(M.unread?'bad':'ok')+'">'+M.unread+' non lu(s)</span>'+M.items.slice(0,6).map(m=>'<div class="item"><div class="m"><b style="'+(m.read_ts?'font-weight:500':'')+'">'+esc(m.subject)+'</b><br><small>'+esc(m.body.split('\n')[0]).slice(0,110)+'<br>'+new Date(m.created).toLocaleString('fr-FR')+'</small></div><div class="d">'+(m.read_ts?'':'<button class="alt" data-mr="'+m.id+'">Lu</button>')+'</div></div>').join('')+(M.items.length?'':'<div class="note">Aucun message.</div>')+'</div>';
+    el.querySelectorAll('[data-mr]').forEach(b=>b.onclick=async()=>{try{await api('POST','/api/messages/'+b.dataset.mr+'/read');inbox()}catch{}})}
+  catch(e){el.innerHTML=''}}
+async function agentView(P){
+  if(!REF)try{REF=await api('GET','/api/ref',null,'x')}catch{}
+  $('#pro').innerHTML=(ROLE==='dp'?'<div class="note">Directeur provincial : vous suivez les signalements de <b>'+esc(P.province||'')+'</b> et pouvez les faire avancer.</div>':'')+(ROLE==='verif'?'<div class="note">Agent de vérification : vous pouvez signaler une officine <b>dans n’importe quelle province ou entité administrative</b>. Vous suivez et vérifiez les signalements de votre province'+(P.province?' (<b>'+esc(P.province)+'</b>)':'')+'.</div>':'')+sigForm(true)+'<h2>Signalements à vérifier</h2><div id="sg_list"><div class="note">Chargement…</div></div>';
+  bindSigForm(true);
+  let L=[];try{L=await api('GET','/api/signalements')}catch(e){$('#sg_list').innerHTML='<div class="err">'+esc(e.message)+'</div>';return}
+  const lbl={recu:'Reçu',en_verification:'En vérification',confirme:'Confirmé',non_fonde:'Non fondé',transmis:'Transmis',classe:'Classé'};
+  $('#sg_list').innerHTML=L.length?L.slice(0,30).map(x=>'<div class="card"><b>'+esc(x.ref)+'</b> <span class="tag '+(x.status==='confirme'?'bad':x.status==='recu'?'info':'warn')+'">'+esc(lbl[x.status])+'</span><br><small>'+esc(x.type_lbl)+' · '+esc(x.prov)+(x.entite?' / '+esc(x.entite):'')+'</small><div style="margin:6px 0">'+esc(x.description.slice(0,160))+'</div>'+(x.lat?'<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+x.lat+','+x.lon+'">Itinéraire</a> ':'')+(SIGN[x.status]||[]).filter(s=>ROLE!=='verif'||['en_verification','confirme','non_fonde'].includes(s)).map(s=>'<button class="alt" data-s="'+x.id+'|'+s+'">'+esc(lbl[s])+'</button>').join(' ')+'</div>').join(''):'<div class="note">Aucun signalement pour votre province.</div>';
+  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{const [id,s]=b.dataset.s.split('|');const note=prompt('Note de vérification (facultatif)')||'';
+    try{const r=await api('PATCH','/api/signalements/'+id,{status:s,note});if(r.queued)alert(r.message);agentView(P)}catch(e){alert(e.message)}})}
+
+/* ---------- Espace professionnel (démo) ---------- */
+let CAM=null;
+function stopCam(){if(CAM){CAM.getTracks().forEach(t=>t.stop());CAM=null}}
+async function vPro(v){
+  v.innerHTML='<h2>Espace professionnel</h2>'+offBanner()+'<div id="inbox"></div><div class="card"><label>Profil (démonstration — en production : connexion sécurisée)</label><select id="who"></select><div id="pro"></div></div>';
+  let PERS=[];try{PERS=(await EP.api('GET','/api/users/demo',null,{})).filter(p=>['pharma','insp','verif','dp'].includes(p.role))}catch{}
+  if(!PERS.length){$('#pro').innerHTML='<div class="err">Profils indisponibles : connectez-vous au moins une fois pour les enregistrer sur cet appareil.</div>';return}
+  const P=PERS.find(p=>p.id===safe('ep_who'))||PERS[0];
+  $('#who').innerHTML=PERS.map(p=>'<option value="'+p.id+'">'+esc(p.nom)+' — '+esc(p.titre)+(p.province?' ('+esc(p.province)+')':'')+'</option>').join('');$('#who').value=P.id;
+  $('#who').onchange=e=>{safe('ep_who',e.target.value);vPro(v)};
+  ROLE=P.role;USER=P.role==='pharma'?P.ref:P.id;UID=P.id;if(ROLE!=='pharma')inbox();
+  let offs=[];try{offs=await api('GET','/api/pro/officines')}catch(e){$('#pro').innerHTML='<div class="err">'+esc(e.message)+'</div>';return}
+  const sc=P.role==='insp'&&P.province?'<div class="note">Périmètre : <b>'+esc(P.province)+'</b> (vous ne voyez que les officines de votre province)</div>':'';
+  if(ROLE==='pharma'){
+    const mine=offs.find(o=>o.id===USER);try{BOOT=await api('GET','/api/bootstrap')}catch{}
+    $('#pro').innerHTML='<label>Votre officine</label><div class="card" style="margin:0"><b>'+esc(mine?mine.nom:USER)+'</b><br><small>'+esc(mine?mine.prov+' · '+mine.entite:'')+'</small></div><label>Ordonnance (QR) ou n°</label><input id="rx" placeholder="EPHARMA|RX|RX-2026-000001|…"><div class="row" style="margin-top:8px"><button id="rxgo">Lire</button><button class="alt" id="scan">📷 Scanner</button></div><video id="vid" playsinline style="display:none;margin-top:8px"></video><div id="rxout"></div>';
+    const read=async txt=>{try{const r=await api('POST','/api/rx/verify',{payload:txt});showRx(r)}catch(e){$('#rxout').innerHTML='<div class="err">⚠ '+esc(e.message)+'</div>'}};
+    $('#rxgo').onclick=()=>read($('#rx').value);
+    $('#scan').onclick=async()=>{
+      if(!('BarcodeDetector' in window)){$('#rxout').innerHTML='<div class="err">Lecture caméra non prise en charge par ce navigateur : saisissez le contenu du QR.</div>';return}
+      try{CAM=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vid=$('#vid');vid.style.display='block';vid.srcObject=CAM;await vid.play();
+        const det=new BarcodeDetector({formats:['qr_code']});
+        const tick=async()=>{if(!CAM)return;try{const c=await det.detect(vid);if(c.length){const t=c[0].rawValue;stopCam();vid.style.display='none';$('#rx').value=t;read(t);return}}catch{}requestAnimationFrame(tick)};tick()
+      }catch(e){$('#rxout').innerHTML='<div class="err">Caméra inaccessible : '+esc(e.message)+'</div>'}};
+  }else if(ROLE==='verif'||ROLE==='dp'){await agentView(P)}else{
+    if(!REF)try{REF=await api('GET','/api/ref',null,'x')}catch{}
+    const fines=REF?REF.fines:[];
+    $('#pro').innerHTML=sc+'<label>Officine inspectée</label><select id="off">'+offs.map(o=>'<option value="'+o.id+'">'+esc(o.nom)+' — '+esc(o.entite)+'</option>').join('')+'</select><label>Infractions constatées</label>'+fines.map((f,i)=>'<label style="display:flex;gap:8px;color:var(--ink);font-size:14.5px;margin:6px 0"><input type="checkbox" class="fx" value="'+i+'" style="width:22px;height:22px"> <span style="flex:1">'+esc(f[0])+'</span><b>'+f[1]+' $</b></label>').join('')+'<label>Observations</label><textarea id="ob" rows="2"></textarea><div style="margin-top:8px"><button class="block" id="pvgo">Générer le PV</button></div><div id="pvout"></div>';
+    $('#pvgo').onclick=async()=>{try{const p=await api('POST','/api/pv',{offId:$('#off').value,fines:[...document.querySelectorAll('.fx:checked')].map(c=>+c.value),obs:$('#ob').value});
+      if(p.queued){$('#pvout').innerHTML='<div class="okm">'+esc(p.message)+'</div>';return}showPv(p)}catch(e){$('#pvout').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}}
+}
+function showRx(r){
+  $('#rxout').innerHTML='<div class="okm">Signature vérifiée — '+esc(r.id)+' · '+esc(r.patient)+'<br><a class="btn" target="_blank" rel="noopener" href="'+docLink('rx',r.id)+'">Voir / imprimer l’ordonnance</a></div>'+r.lines.map((l,i)=>{const rest=l.qty-l.done;return '<div class="item"><div class="m"><b>'+esc(l.name||l.pid)+'</b> <small>'+esc(l.poso)+'</small><br><small>Prescrit '+l.qty+' · délivré '+l.done+'</small></div><div class="d">'+(rest?'<input type="number" id="q'+i+'" min="0" max="'+rest+'" value="'+rest+'" style="width:84px">':'<span class="tag ok">Soldé</span>')+'</div></div>'}).join('')+'<button class="block" id="dlv" style="margin-top:8px">Valider la délivrance</button><div id="dm"></div>';
+  $('#dlv').onclick=async()=>{const lines=r.lines.map((l,i)=>{const e=$('#q'+i);return e?{pid:l.pid,qty:+e.value||0}:null}).filter(Boolean);
+    try{const n=await api('POST','/api/rx/'+r.id+'/deliver',{officine:USER,lines});
+      if(n.queued){$('#rxout').innerHTML='<div class="okm">'+esc(n.message)+'</div>';return}
+      $('#rxout').innerHTML='<div class="okm">Délivrance enregistrée — ordonnance '+esc(n.status)+'. Stock mis à jour.<br><a class="btn" target="_blank" rel="noopener" href="'+docLink('rx',n.id)+'">Voir / imprimer</a></div>'}catch(e){$('#dm').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}}
+function showPv(p){
+  $('#pvout').innerHTML='<div class="okm"><b>'+esc(p.id)+'</b> — '+esc(p.off)+'<br>Total : <b>'+p.total+' $</b><br><a class="btn" target="_blank" rel="noopener" href="'+docLink('pv',p.id)+'">Voir / imprimer le PV</a></div>'+
+   (p.total?'<label>Mode de paiement</label><select id="pm"><option>Carte bancaire (POS)</option><option>Mobile money</option><option>Espèces (reçu)</option><option>QR code de paiement</option><option>Lien de paiement (SMS / WhatsApp)</option></select><div style="margin-top:8px"><button class="block blue" id="pay">Continuer</button></div><div id="pm2"></div>':'');
+  const b=$('#pay');if(b)b.onclick=async()=>{const mode=$('#pm').value;
+    if(/^QR|^Lien/.test(mode))return payLink(p);
+    try{const r=await api('POST','/api/pv/'+p.id+'/pay',{mode});if(r.queued){$('#pm2').innerHTML='<div class="okm">'+esc(r.message)+'</div>';b.disabled=true;return}
+      $('#pm2').innerHTML='<div class="okm">Payé ('+esc(r.mode)+') — reçu '+esc(r.rcp)+'</div>';b.disabled=true}catch(e){$('#pm2').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}}
+async function payLink(p){
+  try{const L=await api('GET','/api/pv/'+p.id+'/paylink');const k=new URL(L.url).searchParams.get('k');
+    const wa='https://wa.me/?text='+encodeURIComponent(L.text),sms='sms:?&body='+encodeURIComponent(L.text);
+    $('#pm2').innerHTML='<div id="plk" class="card" style="text-align:center"><b>Paiement par QR code / lien — '+L.total+' $</b><div style="margin:8px 0">'+qrSvg(L.url,200)+'</div><input id="plu" readonly value="'+esc(L.url)+'" onclick="this.select()"><div class="row" style="margin-top:8px"><a class="btn" target="_blank" rel="noopener" href="'+wa+'">WhatsApp</a><a class="btn" href="'+sms+'">SMS</a></div><div class="note" id="pls">⏳ En attente du paiement… (vérification automatique)</div></div>';
+    const iv=setInterval(async()=>{if(!document.getElementById('plk')){clearInterval(iv);return}
+      try{const st=await (await fetch((window.API_BASE||'')+'/api/pay/'+encodeURIComponent(p.id)+'?k='+encodeURIComponent(k))).json();if(st.paid){clearInterval(iv);$('#pls').innerHTML='✅ Paiement reçu — reçu '+esc(st.rcp)}}catch{}},3500)
+  }catch(e){$('#pm2').innerHTML='<div class="err">'+esc(e.message)+(e.offline?' — le paiement par QR/lien nécessite une connexion ; utilisez Espèces (reçu) hors ligne.':'')+'</div>'}}
+
+var _u=document.createElement('script');_u.src='/update.js';document.head.appendChild(_u);
+window.addEventListener('ep-synced',e=>{
+  const rs=((e.detail&&e.detail.results)||[]).filter(r=>/\/api\/public\/reports$/.test(r.url)&&r.json&&r.json.ref);
+  if(rs.length){const L=safe('ep_reports')||[];rs.forEach(r=>L.push({ref:r.json.ref,code:r.json.code,ts:Date.now()}));safe('ep_reports',L);alert('Signalement envoyé : référence '+rs[rs.length-1].json.ref+' · code de suivi '+rs[rs.length-1].json.code+' (conservez-les).')}
+  if(TAB==='pro'||TAB==='report')render()});
+(async()=>{try{REF=await api('GET','/api/ref',null,'x')}catch{}try{PROVGEO=await (await fetch('/prov.json')).json()}catch{}render();loadLocal()})();
+</script>
+</body>
+</html>

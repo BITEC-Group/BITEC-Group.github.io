@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>État de rétrocession — E-Pharma</title>
+<link rel="stylesheet" href="/secure-doc.css">
+<style>
+:root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--ink:#14231B;--mute:#5B6B62;--line:#CBD6D0}
+*{box-sizing:border-box}body{margin:0;background:#E8EDEA;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink)}
+.bar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;gap:8px;align-items:center;z-index:5}.bar b{flex:1}
+button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#fff;cursor:pointer}
+#docw{margin:14px auto;overflow:hidden}#doc{width:210mm;transform-origin:top left}
+.page{width:210mm;min-height:297mm;background:#fff;padding:16mm 15mm 20mm;position:relative;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.15)}
+.flagb{height:6px;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
+.hd{display:flex;align-items:center;gap:12px;margin:8px 0 10px;border-bottom:2px solid var(--green);padding-bottom:8px}.hd img{width:40mm;mix-blend-mode:multiply}.hd .t{flex:1;text-align:center}.hd h1{margin:0;font-size:17px;color:var(--green-d)}.hd small{color:var(--mute)}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12.5px}th,td{border:1px solid var(--line);padding:5px 7px;text-align:left}th{background:#EEF4F0;font-size:11.5px}td.r,th.r{text-align:right}.tot td{font-weight:700;background:#F2F6F3}
+h3{margin:12px 0 2px;font-size:14px;color:var(--green-d)}.ref{font-size:12.5px;color:#33423A;margin:6px 0}.sign{display:flex;gap:20mm;margin-top:16mm}.sign div{flex:1;text-align:center;border-top:1px solid var(--ink);padding-top:3px;font-size:12px}
+.ft{position:absolute;left:16mm;right:16mm;bottom:12mm;font-size:10.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:4px}.sealp{position:absolute;right:9mm;bottom:21mm}.sealp .sec-seal{width:24mm;height:24mm}
+@media print{body{background:#fff}.bar{display:none}#docw{width:auto!important;height:auto!important;margin:0}#doc{transform:none!important}.page{box-shadow:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}}
+</style>
+</head>
+<body>
+<div class="bar"><b>État mensuel de rétrocession</b><button id="pr">🖨 Imprimer / PDF</button></div>
+<div id="docw"><div id="doc"><div class="page" id="sheet"><div style="padding:20mm">Chargement…</div></div></div></div>
+<script src="/config.js"></script>
+<script src="/secure-doc.js"></script>
+<script>
+const API=window.API_BASE||'',$=s=>document.querySelector(s),P=new URLSearchParams(location.search);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const usd=n=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(+n||0)+' $';
+const LBL={CONFORME:'Conforme',ENCAISSE_SANS_APUREMENT_DOUANE:'Encaissé, en transit',ALERTE_BAE_EMIS_SANS_PAIEMENT:'BAE sans paiement',MOINS_PERCU_A_REDRESSER:'Moins-perçu',TROP_PERCU_SUR_PROFORMA:'Trop-perçu'};
+function fit(){const d=$('#doc'),w=$('#docw');if(!d)return;const W=210*96/25.4,s=Math.min(1,(document.documentElement.clientWidth-24)/W);d.style.transform=s<1?'scale('+s+')':'none';w.style.width=(W*s)+'px';w.style.height=(d.offsetHeight*s)+'px'}
+async function init(){
+  let a;try{const r=await fetch(API+'/api/public/import-audit?mois='+encodeURIComponent(P.get('mois')||'')+'&k='+encodeURIComponent(P.get('k')||''),{cache:'no-store'});a=await r.json();if(!r.ok)throw new Error(a.error||'État introuvable')}catch(e){$('#sheet').innerHTML='<div style="padding:20mm"><b>État non disponible</b><br>'+esc(e.message)+'</div>';return}
+  const V=a.ventilation;
+  $('#sheet').innerHTML='<div class="flagb"></div><div class="hd"><img src="/assets/acorep-logo.jpg" alt="ACOREP"><div class="t"><b>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</b><h1>ÉTAT CERTIFIÉ DE RÉTROCESSION MENSUELLE</h1><small>Autorité Congolaise de Réglementation Pharmaceutique — Direction Financière · Période '+esc(a.periode)+'</small></div></div>'+
+  '<p class="ref">Conformément à l’arrêté ministériel n° 1250/CAB/MSPHP/058/CJ/OBK/2023 fixant la clé de répartition des redevances perçues à l’importation des produits réglementés, les recettes encaissées au cours de la période <b>'+esc(a.periode)+'</b> s’élèvent à <b>'+usd(a.total_encaisse_acorep)+'</b> pour <b>'+usd(a.total_liquide_dgda)+'</b> liquidés en douane (SYDONIA) : taux de recouvrement <b>'+a.taux_recouvrement_pct+' %</b>.</p>'+
+  '<h3>Ordres de virement</h3><table><tr><th>Institution bénéficiaire</th><th class="r">Clé</th><th class="r">Montant net (USD)</th><th>Observation</th></tr><tr><td>ACOREP (compte de fonctionnement)</td><td class="r">'+a.cle.acorep+' %</td><td class="r">'+usd(V.ACOREP_85)+'</td><td>Part conservée</td></tr><tr><td>Ministère de la Santé publique</td><td class="r">'+a.cle.sante+' %</td><td class="r">'+usd(V.MIN_SANTE_10)+'</td><td>Ordre de virement</td></tr><tr><td>Conseil national de la CSU</td><td class="r">'+a.cle.csu+' %</td><td class="r">'+usd(V.CSU_05)+'</td><td>Ordre de virement</td></tr><tr class="tot"><td>TOTAL VENTILÉ</td><td class="r">100 %</td><td class="r">'+usd(a.total_encaisse_acorep)+'</td><td>Certifié conforme</td></tr></table>'+
+  '<h3>Réconciliation DGDA / ACOREP ('+a.total_dossiers+' dossier(s))</h3><table><tr><th>N° LGU</th><th>Opérateur</th><th class="r">Liquidé DGDA</th><th class="r">Encaissé</th><th class="r">Écart</th><th>Qualification</th></tr>'+a.lignes.slice(0,16).map(x=>'<tr><td>'+esc(x.numero_lgu)+'</td><td>'+esc(x.operateur)+'</td><td class="r">'+usd(x.montant_declare_dgda)+'</td><td class="r">'+usd(x.montant_encaisse_acorep)+'</td><td class="r">'+usd(x.ecart)+'</td><td>'+esc(LBL[x.statut_audit]||x.statut_audit)+'</td></tr>').join('')+'</table>'+
+  (a.nombre_anomalies?'<h3>Anomalies à traiter ('+a.nombre_anomalies+')</h3><table><tr><th>N° LGU</th><th>Qualification</th><th class="r">Écart</th><th>Action recommandée</th></tr>'+a.anomalies.map(x=>'<tr><td>'+esc(x.numero_lgu)+'</td><td>'+esc(LBL[x.statut_audit])+'</td><td class="r">'+usd(x.ecart)+'</td><td>'+esc(x.action)+'</td></tr>').join('')+'</table>':'')+
+  '<p class="ref">Fait à Kinshasa, le '+new Date(a.emis_le).toLocaleString('fr-FR')+'</p><div class="sign"><div>Le Directeur Financier ACOREP<br>(signature et cachet)</div><div>Le Directeur Général ACOREP<br>(visa et approbation)</div></div>'+
+  '<div class="sealp">'+EPSec.seal('RETRO-'+a.periode,'CERTIFIÉ')+'</div><div class="ft">Prototype de démonstration BITEC — données fictives, document non officiel. État généré électroniquement.</div>';
+  const h=Math.max(297,Math.round($('#sheet').scrollHeight/96*25.4));EPSec.layers($('#sheet'),210,h);fit();
+}
+window.addEventListener('resize',fit);window.addEventListener('beforeprint',()=>{$('#doc').style.transform='none'});window.addEventListener('afterprint',fit);$('#pr').onclick=()=>window.print();init();
+</script>
+</body>
+</html>
