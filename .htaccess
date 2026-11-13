@@ -1,1 +1,19 @@
-ErrorDocument 404 /404.html
+RewriteEngine On
+# console.pay-r.us -> /console/ (SPA fallback to index.html)
+RewriteCond %{HTTP_HOST} ^console. [NC]
+RewriteCond %{REQUEST_URI} !^/console/
+RewriteCond %{DOCUMENT_ROOT}/console%{REQUEST_URI} !-f
+RewriteCond %{DOCUMENT_ROOT}/console%{REQUEST_URI} !-d
+RewriteRule ^ /console/index.html [L]
+RewriteCond %{HTTP_HOST} ^console. [NC]
+RewriteCond %{REQUEST_URI} !^/console/
+RewriteRule ^(.*)$ /console/$1 [L]
+# every other host (app.pay-r.us) -> /app/ (unknown paths -> 404.html redirect shim)
+RewriteCond %{HTTP_HOST} !^console. [NC]
+RewriteCond %{REQUEST_URI} !^/app/
+RewriteCond %{DOCUMENT_ROOT}/app%{REQUEST_URI} !-f
+RewriteCond %{DOCUMENT_ROOT}/app%{REQUEST_URI} !-d
+RewriteRule ^ /app/404.html [L]
+RewriteCond %{HTTP_HOST} !^console. [NC]
+RewriteCond %{REQUEST_URI} !^/app/
+RewriteRule ^(.*)$ /app/$1 [L]
