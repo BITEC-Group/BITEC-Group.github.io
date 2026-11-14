@@ -301,7 +301,7 @@ const statLbl={autorisee:['Autorisée','ok'],renouvellement:['À renouveler','wa
 const stCol={autorisee:'#0E8A45',renouvellement:'#F7D618',expiree:'#CE1021',en_attente:'#007FFF',clandestine:'#222'};
 
 /* ====================== Tableau de bord ====================== */
-function bars(rows,col='var(--rdc-blue)'){const m=Math.max(...rows.map(r=>r[1]),1);return rows.map(r=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><div style="width:110px;font-size:12px">${esc(r[0])}</div><div class="bar" style="width:${r[1]/m*100}%;min-width:2px;background:${col}"></div><b style="font-size:12px">${fmt(r[1])}</b></div>`).join('')}
+function bars(rows,col='var(--rdc-blue)'){const m=Math.max(...rows.map(r=>r[1]),1);return rows.map(r=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><div style="width:110px;flex:none;font-size:12px">${esc(r[0])}</div><div class="bar" style="width:${r[1]/m*100}%;min-width:2px;background:${r[2]||col}"></div><b style="font-size:12px">${fmt(r[1])}</b></div>`).join('')}
 function donut(parts){const t=parts.reduce((a,p)=>a+p[1],0)||1;let a=0;const R=48,C=2*Math.PI*R;
   const arcs=parts.map(p=>{const l=p[1]/t*C;const s=`<circle r="${R}" cx="60" cy="60" fill="none" stroke="${p[2]}" stroke-width="22" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-a}" transform="rotate(-90 60 60)"/>`;a+=l;return s}).join('');
   return `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><svg width="120" height="120" viewBox="0 0 120 120">${arcs}<text x="60" y="65" text-anchor="middle" font-size="18" font-weight="700">${t}</text></svg><div class="legend">${parts.map(p=>`<div><i style="background:${p[2]}"></i>${esc(p[0])} — <b>${p[1]}</b></div>`).join('')}</div></div>`}
@@ -353,27 +353,27 @@ function geoStats(prov,key){
   const D=DB.decl.filter(d=>offIds.has(d.toId));
   const P=DB.pv.filter(p=>(!prov||p.prov===prov)&&(!key||offIds.has(p.offId)));
   const A=key?[]:DB.amm.filter(a=>!prov||a.prov===prov);
-  const by=k=>O.filter(o=>o.statut===k).length;
-  return{O,total:O.length,autorisee:by('autorisee'),renouv:by('renouvellement'),expiree:by('expiree'),attente:by('en_attente'),clandestine:by('clandestine'),conf:O.length?Math.round(by('autorisee')/O.length*100):0,
+  const by=k=>O.filter(o=>o.statut===k).length,ident=O.filter(o=>o.statut!=='clandestine').length;
+  return{O,total:ident,agrees:by('autorisee')+by('renouvellement'),autorisee:by('autorisee'),renouv:by('renouvellement'),expiree:by('expiree'),attente:by('en_attente'),clandestine:by('clandestine'),conf:ident?Math.round(by('autorisee')/ident*100):0,
     dep,imp,cum,decl:D.length,ecart:D.filter(d=>d.rec===null||d.rec!==d.sent).length,pv:P.length,pvTot:P.reduce((a,p)=>a+p.total,0),pvPaye:P.filter(p=>p.paid).reduce((a,p)=>a+p.total,0),
     amm:A,ammOpen:A.filter(a=>a.etape<4).length,ammLate:A.filter(ammLate).length,ammExp:A.filter(a=>{const e=ammExp(a);return e!==null&&e<=90}).length}}
-function geoTip(name,s){return '<b>'+esc(name)+'</b><br>'+s.total+' officines · '+s.conf+' % à jour<br>'+s.dep.length+' dépôts · '+s.imp.length+' importateurs'+(s.clandestine?'<br><span style="color:#CE1021">'+s.clandestine+' non autorisée(s)</span>':'')}
+function geoTip(name,s){return '<b>'+esc(name)+'</b><br>'+s.total+' officines et pharmacies identifiées · '+s.agrees+' agréées<br>'+s.dep.length+' dépôts · '+s.imp.length+' importateurs'+(s.clandestine?'<br><span style="color:#CE1021">'+s.clandestine+' non autorisée(s)</span>':'')}
 function geoPanel(sel){
   const prov=sel?sel.prov:null,key=sel?sel.key:null,s=geoStats(prov,key);
   const title=sel?(key?key+' ('+prov+')':prov):'République démocratique du Congo';
   const kv=(b,l,c)=>'<div><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b><small>'+l+'</small></div>';
   return '<div class="card gp"><h3>'+esc(title)+'</h3><div class="sub">'+(key?'Ville / entité':sel?'Province':'Vue nationale'+(SCOPE?' (votre périmètre : '+esc(SCOPE)+')':''))+'</div>'+
-  '<div class="kv">'+kv(s.total,'Officines')+kv(s.conf+' %','Cartes à jour')+kv(s.dep.length,'Dépôts pharmaceutiques')+kv(s.imp.length,'Importateurs')+kv(s.clandestine,'Non autorisées','#CE1021')+kv(s.cum.length,'Cumuls de rôles','#C98A00')+'</div>'+
-  '<b style="font-size:12px;color:#5B6B62">Statut des officines</b>'+bars([['À jour',s.autorisee],['À renouveler',s.renouv],['Expirées',s.expiree],['En attente',s.attente],['Non autorisées',s.clandestine]],'var(--ac-green)')+
+  '<div class="kv">'+kv(s.total,'Officines et pharmacies identifiées')+kv(s.agrees,'Agréées (carte valide ou à renouveler)')+kv(s.conf+' %','Cartes à jour')+kv(s.dep.length,'Dépôts pharmaceutiques')+kv(s.imp.length,'Importateurs')+kv(s.clandestine,'Non autorisées','#CE1021')+kv(s.cum.length,'Cumuls de rôles','#C98A00')+'</div>'+
+  '<b style="font-size:12px;color:#5B6B62">Statut des officines et pharmacies</b>'+bars([['À jour',s.autorisee,stCol.autorisee],['À renouveler',s.renouv,stCol.renouvellement],['Expirées',s.expiree,stCol.expiree],['En attente',s.attente,stCol.en_attente],['Non autorisées',s.clandestine,stCol.clandestine]])+
   '<div class="kv" style="margin-top:10px">'+kv(s.decl,'Approvisionnements')+kv(s.ecart,'Écarts / non reçus','#C98A00')+kv(s.pv,'PV émis')+kv(usd(s.pvPaye)+' / '+usd(s.pvTot),'Amendes perçues / dues')+(key?'':kv(s.ammOpen,'Dossiers en cours')+kv(s.ammLate,'Dossiers hors délai','#CE1021'))+'</div>'+
   (s.dep.length?'<b style="font-size:12px;color:#5B6B62">Dépôts pharmaceutiques</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.dep.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.dep.length>6?' …':'')+'</div>':'')+
   (s.imp.length?'<b style="font-size:12px;color:#5B6B62">Importateurs</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.imp.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.imp.length>6?' … (+'+(s.imp.length-6)+')':'')+'</div>':'')+
   (s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).length?'<b style="font-size:12px;color:#5B6B62">À régulariser en priorité</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).map(o=>esc(o.nom)+' <small>('+statLbl[o.statut][0]+')</small>').join('<br>')+'</div>':'')+
   '<div class="row noprint" style="margin-top:8px">'+(can('officines','R')?'<button class="sm" id="gpReg">Ouvrir le registre'+(sel?' filtré':'')+'</button>':'')+(sel?'<button class="sm alt" id="gpAll">Vue nationale</button>':'')+'</div></div>'}
 function vMap(v){
-  v.innerHTML=head('Carte interactive des officines','Survolez une province ou une ville pour un aperçu ; cliquez pour afficher les statistiques (officines, dépôts, importateurs, dossiers, PV).')+
+  v.innerHTML=head('Carte interactive des officines et pharmacies','Survolez une province ou une ville pour un aperçu ; cliquez pour afficher les statistiques (officines et pharmacies, dépôts, importateurs, dossiers, PV).')+
   '<div class="maplay2"><div class="card"><h3>Couches & filtres</h3>'+
-  '<label><input type="checkbox" id="lyP" '+(MAPST.layers.prov?'checked':'')+'> Provinces (densité)</label><label><input type="checkbox" id="lyV" '+(MAPST.layers.city?'checked':'')+'> Villes / communes</label><label><input type="checkbox" id="lyO" '+(MAPST.layers.off?'checked':'')+'> Officines</label><label><input type="checkbox" id="lyC" '+(MAPST.layers.conf?'checked':'')+'> Conflits de distance</label>'+
+  '<label><input type="checkbox" id="lyP" '+(MAPST.layers.prov?'checked':'')+'> Provinces (densité)</label><label><input type="checkbox" id="lyV" '+(MAPST.layers.city?'checked':'')+'> Villes / communes</label><label><input type="checkbox" id="lyO" '+(MAPST.layers.off?'checked':'')+'> Officines et pharmacies</label><label><input type="checkbox" id="lyC" '+(MAPST.layers.conf?'checked':'')+'> Conflits de distance</label>'+
   '<label>Province</label><select id="fProv" style="width:100%"><option value="">Toutes</option>'+PROVS.map(p=>'<option>'+p[0]+'</option>').join('')+'</select>'+
   '<label>Statut</label><select id="fSt" style="width:100%"><option value="">Tous</option>'+Object.keys(statLbl).map(k=>'<option value="'+k+'">'+statLbl[k][0]+'</option>').join('')+'</select>'+
   '<button id="myLoc" class="alt" style="width:100%;margin:8px 0 2px">📍 Ma position</button><div class="note" id="myLocMsg" style="display:none"></div><label>Distance minimale légale (m)</label><input type="number" id="fDist" value="'+SETTINGS.minDist+'" style="width:100%"><div class="note">Seuil paramétrable, à valider juridiquement.</div>'+

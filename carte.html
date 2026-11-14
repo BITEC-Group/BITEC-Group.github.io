@@ -67,7 +67,7 @@ async function init(){
     const mx=Math.max(1,...s.map(x=>x.agrees));
     geo=L.geoJSON(g,{style:f=>({color:'#CE1021',weight:1.2,fillColor:col((stats[GEO2FR[f.properties.name]||f.properties.name]||{}).agrees||0,mx),fillOpacity:.55}),
       onEachFeature:(f,l)=>{const fr=GEO2FR[f.properties.name]||f.properties.name,t=stats[fr];
-        l.bindTooltip('<b>'+esc(fr)+'</b>'+(t?'<br>'+t.officines+' officines · '+t.agrees+' agréées<br>'+t.depots+' dépôts · '+t.importateurs+' importateurs':''),{sticky:true,className:'gtip'});
+        l.bindTooltip('<b>'+esc(fr)+'</b>'+(t?'<br>'+t.officines+' officines et pharmacies identifiées · '+t.agrees+' agréées<br>'+t.depots+' dépôts · '+t.importateurs+' importateurs':''),{sticky:true,className:'gtip'});
         l.on({mouseover:e=>{e.target.setStyle({weight:3,fillOpacity:.8})},mouseout:e=>geo.resetStyle(e.target),click:()=>{select(fr);map.fitBounds(l.getBounds(),{padding:[20,20]})}})}}).addTo(map);
     draw();panel();
   }catch(e){$('#panel').innerHTML='<div class="sub">Carte indisponible : '+esc(e.message)+'</div>'}
@@ -81,7 +81,7 @@ function panel(){
   const s=sel?stats[sel]:{officines:tot.o,agrees:tot.g,depots:tot.d,importateurs:tot.i};
   let list=visible();if(me)list=list.map(o=>({...o,dist:hav(me.lat,me.lon,o.lat,o.lon)})).sort((a,b)=>a.dist-b.dist);else list=list.slice().sort((a,b)=>a.nom.localeCompare(b.nom));
   $('#panel').innerHTML='<h2>'+esc(sel||'Toute la RDC')+'</h2><div class="sub">'+(sel?'Province sélectionnée':'Survolez ou touchez une province pour ses statistiques')+'</div>'+
-   '<div class="kv"><div><b>'+(s?s.officines:0)+'</b><small>officines</small></div><div><b>'+(s?s.agrees:0)+'</b><small>agréées</small></div><div><b>'+(s?s.depots:0)+'</b><small>dépôts</small></div><div><b>'+(s?s.importateurs:0)+'</b><small>importateurs</small></div></div>'+
+   '<div class="kv"><div><b>'+(s?s.officines:0)+'</b><small>officines et pharmacies identifiées</small></div><div><b>'+(s?s.agrees:0)+'</b><small>agréées</small></div><div><b>'+(s?s.depots:0)+'</b><small>dépôts</small></div><div><b>'+(s?s.importateurs:0)+'</b><small>importateurs</small></div></div>'+
    '<div class="legend">Peu<i></i>Beaucoup d’agréées</div>'+
    '<input class="search" id="q" placeholder="Rechercher une pharmacie ou une commune…" value="'+esc(q)+'">'+
    '<div><button id="loc">📍 Près de moi</button> '+(sel?'<button class="alt" id="all">Toute la RDC</button>':'')+'</div>'+
