@@ -823,9 +823,22 @@ const MICON={messages:'✉️',signalements:'🚨',tarifs:'🧮',dash:'📊',map
 const MDESC={messages:'Alertes et messages de votre secteur : signalements, affectations, statuts',signalements:'Officines illégales, plaintes et ventes à l’étalage signalées',tarifs:'Barèmes, paramètres et simulateur de recettes (formules Excel)',dash:'Indicateurs nationaux et alertes',map:'Carte interactive : provinces, villes et statistiques',reg:'Registre des officines et cartes annuelles',products:'Liste des médicaments autorisés',supply:'Importation, dépôts et approvisionnements',rx:'Prescriptions électroniques : imprimer, PDF, envoyer au patient',pharma:'Stock et délivrance par QR code',insp:'Procès-verbaux, amendes et paiement',titles:'Alertes, rappels et cycle de vie des dossiers',reports:'Conformité et disponibilité des produits',roles:'Droits CRUD par profil',sources:'Intégrations et sources de données',licences:'Abonnements mensuels',imports:'Quote-part ACOREP dans les droits DGDA, contrôles OCC, échanges avec les tiers (SYDONIA, SEGUCE) et rétrocession 85/10/5'};
 function vHome(v){
   const p=PERSONAS.find(x=>x.id===PID);const O=DB.officines;
-  v.innerHTML=head('Bienvenue'+(p?', '+esc(p.nom):''),esc(ROLE_LABELS[ROLE]||ROLE)+(ROLE==='insp'||ROLE==='manager'?(SCOPE?' · périmètre : '+esc(SCOPE):' · périmètre national'):''))+
+  v.innerHTML=(O.length&&can('officines','R')?'<div class="card" style="padding:8px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 4px 6px"><b>Situation sur le territoire national</b><span class="sub" style="margin:0">Pharmacies, officines, dépôts pharmaceutiques et importateurs — zoomez pour voir les rues</span><button class="alt" id="hmReset" style="margin-left:auto">Vue RDC complète</button></div><div id="hmapc" style="height:min(58vh,520px);min-height:300px;border-radius:10px"></div></div>':'')+
+  head('Bienvenue'+(p?', '+esc(p.nom):''),esc(ROLE_LABELS[ROLE]||ROLE)+(ROLE==='insp'||ROLE==='manager'?(SCOPE?' · périmètre : '+esc(SCOPE):' · périmètre national'):''))+
   (O.length&&can('officines','R')?'<div class="grid g4" style="margin-bottom:14px"><div class="card kpi g"><div class="v">'+O.length+'</div><div class="l">Officines '+(SCOPE?'de '+esc(SCOPE):'enregistrées')+'</div></div><div class="card kpi y"><div class="v">'+O.filter(o=>o.statut==='renouvellement'||o.statut==='expiree').length+'</div><div class="l">Titres à renouveler ou expirés</div></div><div class="card kpi r"><div class="v">'+O.filter(o=>o.statut==='clandestine').length+'</div><div class="l">Officines non autorisées signalées</div></div><div class="card kpi"><div class="v">'+DB.amm.filter(a=>a.etape<4).length+'</div><div class="l">Dossiers en cours</div></div></div>':'')+
-  '<div class="grid tiles">'+ROLES[ROLE].m.filter(m=>m!=='home').map(m=>'<a class="card tile" href="#'+m+'"><div class="ico">'+MICON[m]+'</div><b>'+esc(MODS[m][0])+'</b><small>'+esc(MDESC[m])+'</small></a>').join('')+'</div>'}
+  '<div class="grid tiles">'+ROLES[ROLE].m.filter(m=>m!=='home').map(m=>'<a class="card tile" href="#'+m+'"><div class="ico">'+MICON[m]+'</div><b>'+esc(MODS[m][0])+'</b><small>'+esc(MDESC[m])+'</small></a>').join('')+'</div>';
+  homeRdc(v,O)}
+/* Carte d'ensemble de la RDC (sans fond ni inscriptions) : tous les établissements visibles par le profil connecté */
+let HOMEMAP=null;
+function homeRdc(v,O){
+  const el=v.querySelector('#hmapc');if(HOMEMAP){try{HOMEMAP.destroy()}catch{}HOMEMAP=null}if(!el||!window.RDCMap||!window.L)return;
+  const provCenter=Object.fromEntries(PROVS.map(p=>[p[0],[p[3],p[4]]]));
+  const pts=RDCMap.pointsFrom({officines:O,entites:DB.entities||[],provCenter});
+  const canReg=ROLES[ROLE].m.includes('reg');
+  HOMEMAP=RDCMap.mount(el,{points:pts,geo:PROV_GEO,provName:n=>GEO2FR[n]||n,
+    popup:p=>'<b>'+esc(p.nom)+'</b><br><small>'+esc(RDCMap.CATS[p.cat][0])+' · '+esc(p.entite||p.prov||'')+(p.statut&&statLbl[p.statut]?' · '+esc(statLbl[p.statut][0]):'')+(p.approx?'<br>position indicative (chef-lieu)':'')+'</small>'+(canReg&&p.cat!=='importateur'?'<br><a href="#" data-hmreg="'+esc(p.nom)+'">Voir dans le registre</a>':'')});
+  el.addEventListener('click',e=>{const a=e.target.closest('[data-hmreg]');if(a){e.preventDefault();REGF.q=a.dataset.hmreg;REGF.st='';REGF.sts=null;REGF.prov='';navTo('reg')}});
+  const rb=v.querySelector('#hmReset');if(rb)rb.onclick=()=>HOMEMAP.reset()}
 
 /* ====================== Médicaments autorisés (référentiel) ====================== */
 function vProducts(v){
@@ -871,13 +884,15 @@ const h0=location.hash.slice(1);if(MODS[h0])CUR=h0;
 (async()=>{
   authBtn();$('#view').innerHTML='<div class="sub">Connexion au serveur…</div>';
   try{PROV_GEO=await (await fetch('/prov.json')).json();try{PERSONAS=await EP.api('GET','/api/users/demo',null,{})}catch{};applySession();buildRole();authBtn();await refresh();NAV.stack=[CUR];NAV.i=0;go()}
-  catch(e){if(e.http===401){const had=!!SES.tok;SES.clear();authBtn();return showLogin(had?'Session expirée : reconnectez-vous.':'')}$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable : '+esc(e.message)+'. Lancez <code>node server.js</code> puis rechargez.</div>'}
+  catch(e){if(e.http===401){const had=!!SES.tok;SES.clear();authBtn();return showLogin(had?'Session expirée : reconnectez-vous.':'')}$('#view').innerHTML='<div class="err">Serveur E-Pharma injoignable ('+esc(e.message)+'). Il démarre peut-être : nouvelle tentative automatique dans <b id="rtry">15</b> s. <button class="alt" onclick="location.reload()">Réessayer maintenant</button><br><small>Hébergement local : <code>node server.js</code> (ou la tâche « E-Pharma - en ligne en permanence »).</small></div>';
+    let n=15;const iv=setInterval(()=>{n--;const b=document.getElementById('rtry');if(b)b.textContent=n;if(n<=0){clearInterval(iv);location.reload()}},1000)}
 })();
 var _u=document.createElement('script');_u.src='/update.js';document.head.appendChild(_u);
 window.addEventListener('ep-synced',()=>refresh().then(()=>go()).catch(()=>{}));
 setInterval(()=>{if(EP.isOnline())loadBell()},60000);
 </script>
 <script src="/imports-ui.js"></script>
+<script src="/rdc-map.js"></script>
 <script src="/dash-click.js"></script>
 </body>
 </html>

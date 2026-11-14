@@ -36,7 +36,8 @@ label{display:block;font-size:12.5px;color:var(--mute);margin:8px 0 3px}
 .err{background:#FDE6E8;border:1px solid #F0A5AC;color:#7D0913;border-radius:10px;padding:9px;margin:8px 0}
 .okm{background:#E3F5EA;border:1px solid #9AD7B1;color:#0A5A2B;border-radius:10px;padding:9px;margin:8px 0}
 .note{font-size:12.5px;color:var(--mute);margin:8px 0}
-#map{height:260px;border-radius:14px;margin-bottom:10px}
+#map{height:260px;border-radius:14px;margin-bottom:10px}#map.hmap{height:min(52vh,380px);min-height:260px;margin-top:0}
+.rtc .modes{margin:6px 0}.rtc .modes button{padding:7px 8px;font-size:13px}.rtc .modes button.on{background:var(--blue);border-color:var(--blue);color:#fff}.rtc .sum{font-size:18px;font-weight:700;margin:6px 0}.rtc ol{margin:6px 0 0;padding-left:20px;font-size:14px}.rtc li{padding:3px 0}.rtc li small{color:var(--mute)}.d .btn,.d button{margin-top:4px;padding:6px 10px;font-size:13px}.rtpin{background:#CE1021;border:2px solid #fff;border-radius:50% 50% 50% 0;width:20px;height:20px;transform:rotate(-45deg)}
 .tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid var(--green);display:flex;z-index:1000;padding-bottom:env(safe-area-inset-bottom)}
 .tabs button{flex:1;border:0;border-radius:0;background:#fff;color:var(--mute);font-size:11.5px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .tabs button span{font-size:21px}.tabs button.on{color:var(--green);background:#EAF2ED}
@@ -62,6 +63,7 @@ a.btn{display:inline-block;text-decoration:none;padding:8px 12px;border-radius:1
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="/rdc-map.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -108,11 +110,39 @@ function tabs(){$('#tabs').innerHTML=TABS.map(t=>'<button class="'+(t[0]===TAB?'
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{if(b.dataset.t==='home')TABH=['home'];go(b.dataset.t)});
   $('#mBack').style.display=TABH.length>1&&TAB!=='home'?'':'none'}
 $('#mBack').onclick=back;$('#mHome').onclick=()=>{TABH=['home'];go('home')};
-function render(){tabs();if(MAP){MAP.remove();MAP=null}stopCam();({home:vHome,near:vNear,med:vMed,check:vCheck,report:vReport,pro:vPro})[TAB]($('#v'));window.scrollTo(0,0)}
+function render(){tabs();if(MAP){MAP.remove();MAP=null}RT.layer=RT.pin=RT.dest=null;stopCam();({home:vHome,near:vNear,med:vMed,check:vCheck,report:vReport,pro:vPro})[TAB]($('#v'));window.scrollTo(0,0)}
 function vHome(v){
   const T=[['near','📍','Pharmacies près de moi','Trouvez les pharmacies agréées autour de vous'],['med','💊','Trouver un médicament','Disponibilité en stock dans les pharmacies proches'],['check','✔️','Vérifier un médicament','Est-il autorisé par le régulateur ?'],['report','🚨','Signaler une officine ou une vente illégale','Officine suspecte, plainte, vente à l’étalage'],['pro','🩺','Espace professionnel','Pharmaciens et inspecteurs : délivrance, PV, paiement']];
-  v.innerHTML='<h2>Bienvenue sur E-Pharma</h2><div class="note">Application utilisable sans connexion : vos données sont enregistrées sur l’appareil et synchronisées automatiquement au retour du réseau.</div>'+offBanner()+T.map(x=>'<button class="tile" data-go="'+x[0]+'"><span>'+x[1]+'</span><div><b>'+x[2]+'</b><small>'+x[3]+'</small></div></button>').join('');
-  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go))}
+  v.innerHTML='<div id="map" class="hmap"></div><div class="row" style="margin-bottom:10px"><button class="alt" id="hmAll">🇨🇩 Vue RDC</button><button class="blue" id="hmHere">📍 Ma zone</button></div><div id="rt"></div><div id="hn"><div class="card">Localisation en cours…</div></div>'+locBox()+'<h2>Bienvenue sur E-Pharma</h2><div class="note">Application utilisable sans connexion : vos données sont enregistrées sur l’appareil et synchronisées automatiquement au retour du réseau. Touchez la carte pour choisir un lieu, ou une pharmacie pour obtenir son itinéraire.</div>'+offBanner()+T.map(x=>'<button class="tile" data-go="'+x[0]+'"><span>'+x[1]+'</span><div><b>'+x[2]+'</b><small>'+x[3]+'</small></div></button>').join('');
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  bindLoc(()=>vHome(v));homeMap()}
+let HRAD=5000,HNEAR=[],RDC=null,RDCD=null;
+async function rdcData(){if(RDCD)return RDCD;try{RDCD=await EP.api('GET','/api/public/map',null,{})}catch{RDCD={officines:LOCAL.officines||[],entites:[]}}return RDCD}
+function nearHtml(L){return LOC&&L.length?'<div class="card"><b>Pharmacies agréées les plus proches de vous</b>'+L.map((o,i)=>'<div class="item"><div class="m"><b>'+(i+1)+'. '+esc(o.nom)+'</b><br><small>'+esc(o.entite)+'</small></div><div class="d">'+km(o.distance)+'<br>'+itin(o)+'</div></div>').join('')+'</div>':(LOC?'<div class="note">Aucune pharmacie agréée dans '+km(HRAD)+' autour de vous.</div>':'<div class="note">Position inconnue : touchez « Me localiser » ou choisissez une ville pour voir les pharmacies les plus proches.</div>')}
+async function showNear(){
+  const hn=$('#hn');if(!hn||!RDC)return;
+  if(!LOC){hn.innerHTML=nearHtml([]);return}
+  const r0=RAD;RAD=HRAD;let L=[];try{L=(await nearbyData()).slice(0,5)}catch{}RAD=r0;
+  if(!$('#hn'))return;HNEAR=L;L.forEach(o=>DEST[o.id]=o);hn.innerHTML=nearHtml(L);RDC.showNearest(LOC,L)}
+async function homeMap(){
+  if(!$('#map'))return;if(MAP){MAP.remove();MAP=null}RDC=null;RT.layer=RT.pin=null;
+  const D=await rdcData();let geo=PROVGEO;if(!geo)try{geo=PROVGEO=await (await fetch('/prov.json')).json()}catch{}
+  if(!$('#map'))return;
+  const provCenter=Object.fromEntries(((REF&&REF.provs)||[]).map(p=>[p.n,[p.lat,p.lon]]));
+  const pts=RDCMap.pointsFrom({officines:D.officines,entites:D.entites,provCenter});
+  RDC=RDCMap.mount('#map',{points:pts,geo,provName:n=>GEO2FR[n]||n,
+    popup:p=>'<b>'+esc(p.nom)+'</b><br><small>'+esc(RDCMap.CATS[p.cat][0])+' · '+esc(p.entite||p.prov||'')+(p.approx?'<br>position indicative (chef-lieu)':'')+'</small>'+(p.cat==='importateur'?'':'<br>'+itin(DEST[p.id]=Object.assign({},p,{distance:LOC?Math.round(hav(LOC.lat,LOC.lon,p.lat,p.lon)):null}))),
+    onMapClick:e=>{if(RDC.map.getZoom()<12)return;const d={id:'pt',nom:'Lieu sélectionné',lat:+e.latlng.lat.toFixed(6),lon:+e.latlng.lng.toFixed(6)};DEST.pt=d;L.popup().setLatLng(e.latlng).setContent('<b>Lieu sélectionné</b><br><small>'+d.lat+', '+d.lon+'</small><br>'+itin(d)).openOn(RDC.map)}});
+  MAP=RDC.map;
+  const all=$('#hmAll'),here=$('#hmHere');
+  if(all)all.onclick=()=>RDC.reset();
+  if(here)here.onclick=()=>{if(LOC)RDC.zoomHere(LOC,HNEAR);else locate()};
+  if(LOC){showNear()}else locate()}
+/* localisation automatique à l'ouverture : les pharmacies les plus proches s'affichent aussitôt */
+function locate(){
+  if(!navigator.geolocation){showNear();return}
+  navigator.geolocation.getCurrentPosition(p=>{LOC={lat:p.coords.latitude,lon:p.coords.longitude,label:'GPS'};safe('ep_loc',LOC);const s=$('#locst');if(s)s.textContent='Position : GPS ('+LOC.lat.toFixed(3)+', '+LOC.lon.toFixed(3)+')';showNear()},
+    ()=>showNear(),{enableHighAccuracy:true,timeout:9000,maximumAge:120000})}
 
 /* ---------- Localisation ---------- */
 function locBox(cb){
@@ -132,19 +162,67 @@ let RAD=5000;
 function vNear(v){
   v.innerHTML=`<h2>Pharmacies agréées près de moi</h2>${locBox()}<div id="nres"></div>`;bindLoc(()=>vNear(v));
   if(!LOC)return;
-  $('#nres').innerHTML=`<div class="card"><label>Rayon</label><select id="rad">${[1000,3000,5000,10000,25000].map(r=>`<option value="${r}" ${r===RAD?'selected':''}>${km(r)}</option>`).join('')}</select></div><div id="map"></div><div class="card" id="nl">Recherche…</div>`;
+  $('#nres').innerHTML=`<div class="card"><label>Rayon</label><select id="rad">${[1000,3000,5000,10000,25000].map(r=>`<option value="${r}" ${r===RAD?'selected':''}>${km(r)}</option>`).join('')}</select></div><div id="map"></div><div id="rt"></div><div class="card" id="nl">Recherche…</div>`;
   $('#rad').onchange=e=>{RAD=+e.target.value;vNear(v)};
   nearbyData().then(L=>{
     MAP=L_map(L);
-    $('#nl').innerHTML=L.length?L.map(o=>`<div class="item"><div class="m"><b>${esc(o.nom)}</b><br><small>${esc(o.prov)} · ${esc(o.entite)}<br>Agrément valide jusqu’au ${esc(o.expiration)}</small></div><div class="d">${km(o.distance)}<br><a class="btn" target="_blank" rel="noopener" href="${dirLink(o)}">Itinéraire</a></div></div>`).join(''):'<div class="note">Aucune pharmacie agréée trouvée dans ce rayon. Augmentez le rayon.</div>'
+    $('#nl').innerHTML=L.length?L.map(o=>`<div class="item"><div class="m"><b>${esc(o.nom)}</b><br><small>${esc(o.prov)} · ${esc(o.entite)}<br>Agrément valide jusqu’au ${esc(o.expiration)}</small></div><div class="d">${km(o.distance)}<br>${itin(o)}</div></div>`).join(''):'<div class="note">Aucune pharmacie agréée trouvée dans ce rayon. Augmentez le rayon.</div>'
   }).catch(e=>$('#nl').innerHTML='<div class="err">'+esc(e.message)+'</div>')}
+/* ---------- Carte (noms de rues) et itinéraire ---------- */
+const DEST={};let RT={layer:null,pin:null,mode:'car',dest:null};
+const MODES={car:['🚗','Voiture','routed-car','driving','driving'],foot:['🚶','À pied','routed-foot','foot','walking'],bike:['🚲','Vélo','routed-bike','bike','bicycling']};
+const navGoogle=(d,m)=>'https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lon+(LOC?'&origin='+LOC.lat+','+LOC.lon:'')+'&travelmode='+MODES[m||RT.mode][4];
+const navApple=(d,m)=>'https://maps.apple.com/?daddr='+d.lat+','+d.lon+(LOC?'&saddr='+LOC.lat+','+LOC.lon:'')+'&dirflg='+((m||RT.mode)==='foot'?'w':'d');
+const itin=o=>{DEST[o.id]=o;return '<button class="alt" data-rt="'+esc(o.id)+'">Itinéraire</button><br><a class="btn" target="_blank" rel="noopener" href="'+navGoogle(o,'car')+'">▶ Lancer</a>'};
+const fmtDur=s=>{const m=Math.round(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
+function stepTxt(s){const m=s.maneuver||{},ty=m.type,md=m.modifier,n=s.name?' sur '+s.name:'';
+  const sens={left:'à gauche','slight left':'légèrement à gauche','sharp left':'franchement à gauche',right:'à droite','slight right':'légèrement à droite','sharp right':'franchement à droite',straight:'tout droit',uturn:'demi-tour'}[md]||'';
+  if(ty==='depart')return 'Départ'+n;
+  if(ty==='arrive')return 'Arrivée à destination'+(sens&&md!=='straight'?' ('+sens+')':'');
+  if(ty==='roundabout'||ty==='rotary'||ty==='roundabout turn')return 'Au rond-point, prendre la sortie '+(m.exit||'')+n;
+  if(md==='uturn')return 'Faire demi-tour'+n;
+  if(md==='straight'||ty==='continue'||ty==='new name')return 'Continuer'+(md&&md!=='straight'?' '+sens:' tout droit')+n;
+  if(ty==='merge')return 'Rejoindre'+n;
+  if(ty==='fork')return 'À l’embranchement, prendre '+sens+n;
+  return 'Tourner '+sens+n}
+function rtPanel(){let r=$('#rt');if(!r){r=document.createElement('div');r.id='rt';const m=$('#map');(m||$('#v')).after(r)}return r}
+function rtEnd(){if(MAP){if(RT.layer)MAP.removeLayer(RT.layer);if(RT.pin)MAP.removeLayer(RT.pin)}RT.layer=RT.pin=RT.dest=null;const r=$('#rt');if(r)r.innerHTML=''}
+async function route(d,mode){
+  const pn=rtPanel();
+  if(!LOC){pn.innerHTML='<div class="err">Définissez d’abord votre position : bouton « Me localiser » ou choix d’une ville.</div>';return}
+  RT.dest=d;if(mode)RT.mode=mode;const M=MODES[RT.mode];
+  const head='<div class="card rtc"><b>Itinéraire vers '+esc(d.nom)+'</b><div class="row modes">'+Object.entries(MODES).map(([k,v])=>'<button class="'+(k===RT.mode?'on':'alt')+'" data-mode="'+k+'">'+v[0]+' '+v[1]+'</button>').join('')+'</div>';
+  const links='<div class="row" style="margin-top:8px"><a class="btn" target="_blank" rel="noopener" href="'+navGoogle(d)+'" style="text-align:center">▶ Lancer la navigation</a><a class="btn" target="_blank" rel="noopener" href="'+navApple(d)+'" style="text-align:center;background:#444">Plans (Apple)</a></div><div style="margin-top:8px"><button class="alt" data-rtx="1">Effacer l’itinéraire</button></div></div>';
+  pn.innerHTML=head+'<div class="note">Calcul de l’itinéraire…</div>'+links;pn.scrollIntoView({block:'nearest',behavior:'smooth'});
+  try{
+    const c=new AbortController(),to=setTimeout(()=>c.abort(),15000);
+    const r=await fetch('https://routing.openstreetmap.de/'+M[2]+'/route/v1/'+M[3]+'/'+LOC.lon+','+LOC.lat+';'+d.lon+','+d.lat+'?overview=full&geometries=geojson&steps=true&alternatives=false',{signal:c.signal});clearTimeout(to);
+    const j=await r.json();if(j.code!=='Ok'||!j.routes||!j.routes[0])throw new Error('Aucun itinéraire trouvé pour ce mode de déplacement.');
+    const rt=j.routes[0],steps=(rt.legs[0]&&rt.legs[0].steps)||[];
+    if(MAP){if(RT.layer)MAP.removeLayer(RT.layer);if(RT.pin)MAP.removeLayer(RT.pin);
+      RT.layer=L.geoJSON(rt.geometry,{style:{color:'#007FFF',weight:6,opacity:.85}}).addTo(MAP);
+      RT.pin=L.marker([d.lat,d.lon],{icon:L.divIcon({className:'',html:'<div class="rtpin"></div>',iconSize:[20,20],iconAnchor:[10,20]})}).addTo(MAP);
+      MAP.fitBounds(RT.layer.getBounds(),{padding:[28,28],maxZoom:17})}
+    pn.innerHTML=head+'<div class="sum">'+M[0]+' '+fmtDur(rt.duration)+' · '+km(Math.round(rt.distance))+'</div>'+links;
+    const ol=document.createElement('div');ol.className='card rtc';ol.innerHTML='<b>Étapes</b><ol>'+steps.map(s=>'<li>'+esc(stepTxt(s))+(s.distance>0?' <small>('+km(Math.round(s.distance))+')</small>':'')+'</li>').join('')+'</ol>';pn.appendChild(ol)
+  }catch(e){
+    pn.innerHTML=head+'<div class="note">Itinéraire intégré indisponible ('+esc(e.name==='AbortError'?'délai dépassé':e.message)+'). Vous pouvez lancer la navigation dans votre application de cartes.</div>'+links}}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-rt],[data-mode],[data-rtx]');if(!b)return;
+  if(b.dataset.rtx){rtEnd();return}
+  if(b.dataset.mode){if(RT.dest)route(RT.dest,b.dataset.mode);return}
+  const d=DEST[b.dataset.rt];if(d){route(d);if(MAP)MAP.closePopup()}});
+function mapBase(zoomFallback){
+  const m=L.map('map',{maxZoom:19}).setView(LOC?[LOC.lat,LOC.lon]:[-4.325,15.322],LOC?15:zoomFallback||11);
+  epTileLayer({labels:true}).addTo(m);
+  m.on('click',e=>{const d={id:'pt',nom:'Lieu sélectionné',lat:+e.latlng.lat.toFixed(6),lon:+e.latlng.lng.toFixed(6)};DEST.pt=d;
+    L.popup().setLatLng(e.latlng).setContent('<b>Lieu sélectionné</b><br><small>'+d.lat+', '+d.lon+'</small><br>'+itin(d)).openOn(m)});
+  return m}
 function L_map(list,extra){
-  const m=L.map('map').setView([LOC.lat,LOC.lon],13);
-  epTileLayer().addTo(m);
-  L.circleMarker([LOC.lat,LOC.lon],{radius:8,color:'#fff',weight:2,fillColor:'#007FFF',fillOpacity:1}).bindTooltip('Vous êtes ici').addTo(m);
-  const pts=[[LOC.lat,LOC.lon]];
-  list.forEach(o=>{L.circleMarker([o.lat,o.lon],{radius:8,color:'#fff',weight:2,fillColor:'#0E6B38',fillOpacity:1}).bindPopup(`<b>${esc(o.nom)}</b><br>${km(o.distance)}<br><a target="_blank" rel="noopener" href="${dirLink(o)}">Itinéraire</a>`).addTo(m);pts.push([o.lat,o.lon])});
-  if(pts.length>1)m.fitBounds(pts,{padding:[24,24],maxZoom:15});setTimeout(()=>m.invalidateSize(),50);return m}
+  const m=mapBase();
+  if(LOC)L.circleMarker([LOC.lat,LOC.lon],{radius:8,color:'#fff',weight:2,fillColor:'#007FFF',fillOpacity:1}).bindTooltip('Vous êtes ici').addTo(m);
+  const pts=LOC?[[LOC.lat,LOC.lon]]:[];
+  list.forEach(o=>{DEST[o.id]=o;L.circleMarker([o.lat,o.lon],{radius:9,color:'#fff',weight:2,fillColor:'#0E6B38',fillOpacity:1}).bindPopup('<b>'+esc(o.nom)+'</b><br><small>'+esc(o.entite||'')+'</small>'+(o.distance!=null?'<br>'+km(o.distance):'')+'<br>'+itin(o)).addTo(m);pts.push([o.lat,o.lon])});
+  if(pts.length>1)m.fitBounds(pts,{padding:[24,24],maxZoom:16});setTimeout(()=>m.invalidateSize(),50);return m}
 
 /* ---------- Trouver un médicament ---------- */
 function vMed(v){
@@ -157,7 +235,7 @@ async function stockSearch(pid){
   if(!LOC){$('#mres').innerHTML='<div class="err">Définissez d’abord votre position (bouton ci-dessus ou ville).</div>';return}
   $('#mres').innerHTML='<div class="card">Recherche en cours…</div>';
   try{const r=await api('GET',`/api/public/stock?pid=${pid}&lat=${LOC.lat}&lon=${LOC.lon}&r=30000`,null,'x');
-    $('#mres').innerHTML=`<div class="card"><b>${esc(r.product.name)}</b> <small>${esc(r.product.form)}</small>${r.product.controlled?'<div class="note">⚠ Médicament soumis à prescription : présentez une ordonnance électronique (QR).</div>':''}</div><div id="map"></div><div class="card">${r.results.length?r.results.map(o=>`<div class="item"><div class="m"><b>${esc(o.nom)}</b><br><small>${esc(o.prov)} · ${esc(o.entite)}</small><br><span class="tag ${o.niveau==='disponible'?'ok':'warn'}">${o.niveau==='disponible'?'Disponible':'Stock limité'}</span></div><div class="d">${km(o.distance)}<br><a class="btn" target="_blank" rel="noopener" href="${dirLink(o)}">Itinéraire</a></div></div>`).join(''):'<div class="note">Aucune pharmacie agréée n’a ce produit en stock dans un rayon de 30 km.</div>'}<div class="note">Les stocks sont déclarés par les pharmacies : appelez avant de vous déplacer.</div></div>`;
+    $('#mres').innerHTML=`<div class="card"><b>${esc(r.product.name)}</b> <small>${esc(r.product.form)}</small>${r.product.controlled?'<div class="note">⚠ Médicament soumis à prescription : présentez une ordonnance électronique (QR).</div>':''}</div><div id="map"></div><div id="rt"></div><div class="card">${r.results.length?r.results.map(o=>`<div class="item"><div class="m"><b>${esc(o.nom)}</b><br><small>${esc(o.prov)} · ${esc(o.entite)}</small><br><span class="tag ${o.niveau==='disponible'?'ok':'warn'}">${o.niveau==='disponible'?'Disponible':'Stock limité'}</span></div><div class="d">${km(o.distance)}<br>${itin(o)}</div></div>`).join(''):'<div class="note">Aucune pharmacie agréée n’a ce produit en stock dans un rayon de 30 km.</div>'}<div class="note">Les stocks sont déclarés par les pharmacies : appelez avant de vous déplacer.</div></div>`;
     if(r.results.length)MAP=L_map(r.results);else{const m=$('#map');m&&m.remove()}
   }catch(e){$('#mres').innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 

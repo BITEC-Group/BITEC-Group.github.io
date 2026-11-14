@@ -11,10 +11,10 @@ window.API_BASE=window.API_BASE||'';
 function clean(layer){
   layer.on('add',()=>{try{const g=layer.getMaplibreMap();const hide=()=>{try{((g.getStyle()||{}).layers||[]).forEach(l=>{if(l.type==='symbol'&&(g.getLayoutProperty(l.id,'visibility')!=='none'))g.setLayoutProperty(l.id,'visibility','none')})}catch{}};g.on('styledata',hide);g.on('load',hide);hide()}catch{}});
   return layer}
-window.epTileLayer=function(){
+window.epTileLayer=function(opt){
   const webgl=(()=>{try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'))}catch{return false}})();
   if(!window.TILE_URL&&webgl&&window.maplibregl&&L.maplibreGL)
-    return clean(L.maplibreGL({style:window.TILE_STYLE||'https://tiles.openfreemap.org/styles/liberty',attribution:'<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Données <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>'}));
+    return (opt&&opt.labels?x=>x:clean)(L.maplibreGL({style:window.TILE_STYLE||'https://tiles.openfreemap.org/styles/liberty',attribution:'<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Données <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>'}));
   return L.tileLayer(window.TILE_URL||'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,referrerPolicy:'origin',crossOrigin:true,
     attribution:window.TILE_ATTRIB||'Fond de carte © Esri, HERE, Garmin, © OpenStreetMap contributors'});
 };
