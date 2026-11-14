@@ -18,8 +18,8 @@
     // 1. indicateurs (8 cartes) : même ordre que dans vDash
     const kp=[...v.querySelectorAll('.grid.g4 > .card.kpi')];
     const T=[
-      ['Officines et pharmacies enregistrées',()=>reg({sts:['autorisee','renouvellement','expiree','en_attente']}),'reg'],
-      ['Officines identifiées (carte valide ou à renouveler)',()=>reg({sts:['autorisee','renouvellement']}),'reg'],
+      ['Officines et pharmacies identifiées',()=>reg({sts:['autorisee','renouvellement','expiree','en_attente']}),'reg'],
+      ['Officines agréées (carte valide ou à renouveler)',()=>reg({sts:['autorisee','renouvellement']}),'reg'],
       ['Officines à régulariser',()=>reg({sts:['expiree','en_attente']}),'reg'],
       ['Officines non autorisées signalées',()=>reg({st:'clandestine'}),'reg'],
       ['Recettes des cartes annuelles (barèmes)',()=>allowed('tarifs')?navTo('tarifs'):reg(),'reg'],
@@ -47,7 +47,7 @@
   // Accueil : les 4 indicateurs sont cliquables
   function decorateHome(v){
     const k=[...v.querySelectorAll('.grid.g4 > .card.kpi')];
-    const T=[['Officines et pharmacies enregistrées',()=>reg({sts:['autorisee','renouvellement','expiree','en_attente']}),'reg'],['Titres à renouveler ou expirés',()=>reg({sts:['renouvellement','expiree']}),'reg'],['Officines non autorisées signalées',()=>reg({st:'clandestine'}),'reg'],['Dossiers en cours',()=>navTo('titles'),'titles']];
+    const T=[['Officines et pharmacies identifiées',()=>reg({sts:['autorisee','renouvellement','expiree','en_attente']}),'reg'],['Titres à renouveler ou expirés',()=>reg({sts:['renouvellement','expiree']}),'reg'],['Officines non autorisées signalées',()=>reg({st:'clandestine'}),'reg'],['Dossiers en cours',()=>navTo('titles'),'titles']];
     k.forEach((el,i)=>{const x=T[i];if(x)make(el,x[0],x[1],x[2])})}
   const origHome=vHome;
   vHome=function(v){origHome(v);try{decorateHome(v)}catch(e){console.warn('accueil cliquable : '+e.message)}};

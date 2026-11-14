@@ -119,25 +119,26 @@ function vHome(v){
   bindLoc(()=>vHome(v));homeMap()}
 let HRAD=5000,HNEAR=[],RDC=null,RDCD=null;
 async function rdcData(){if(RDCD)return RDCD;try{RDCD=await EP.api('GET','/api/public/map',null,{})}catch{RDCD={officines:LOCAL.officines||[],entites:[]}}return RDCD}
-function nearHtml(L){return LOC&&L.length?'<div class="card"><b>Pharmacies agréées les plus proches de vous</b>'+L.map((o,i)=>'<div class="item"><div class="m"><b>'+(i+1)+'. '+esc(o.nom)+'</b><br><small>'+esc(o.entite)+'</small></div><div class="d">'+km(o.distance)+'<br>'+itin(o)+'</div></div>').join('')+'</div>':(LOC?'<div class="note">Aucune pharmacie agréée dans '+km(HRAD)+' autour de vous.</div>':'<div class="note">Position inconnue : touchez « Me localiser » ou choisissez une ville pour voir les pharmacies les plus proches.</div>')}
+function nearHtml(L){return LOC&&L.length?'<div class="card"><b>Les 3 pharmacies agréées les plus proches de vous</b>'+L.map((o,i)=>'<div class="item"><div class="m"><b>'+(i+1)+'. '+esc(o.nom)+'</b><br><small>'+esc(o.entite)+'</small></div><div class="d">'+km(o.distance)+'<br>'+itin(o)+'</div></div>').join('')+'</div>':(LOC?'<div class="note">Aucune pharmacie agréée dans '+km(HRAD)+' autour de vous.</div>':'<div class="note">Position inconnue : touchez « Me localiser » ou choisissez une ville pour voir les pharmacies les plus proches.</div>')}
 async function showNear(){
   const hn=$('#hn');if(!hn||!RDC)return;
   if(!LOC){hn.innerHTML=nearHtml([]);return}
-  const r0=RAD;RAD=HRAD;let L=[];try{L=(await nearbyData()).slice(0,5)}catch{}RAD=r0;
-  if(!$('#hn'))return;HNEAR=L;L.forEach(o=>DEST[o.id]=o);hn.innerHTML=nearHtml(L);RDC.showNearest(LOC,L)}
+  const r0=RAD;RAD=HRAD;let L=[];try{L=(await nearbyData()).slice(0,3)}catch{}RAD=r0;
+  if(!$('#hn'))return;HNEAR=L;L.forEach(o=>DEST[o.id]=o);hn.innerHTML=nearHtml(L);RDC.showNearest(LOC,L,false)}
 async function homeMap(){
   if(!$('#map'))return;if(MAP){MAP.remove();MAP=null}RDC=null;RT.layer=RT.pin=null;
   const D=await rdcData();let geo=PROVGEO;if(!geo)try{geo=PROVGEO=await (await fetch('/prov.json')).json()}catch{}
   if(!$('#map'))return;
   const provCenter=Object.fromEntries(((REF&&REF.provs)||[]).map(p=>[p.n,[p.lat,p.lon]]));
   const pts=RDCMap.pointsFrom({officines:D.officines,entites:D.entites,provCenter});
-  RDC=RDCMap.mount('#map',{points:pts,geo,provName:n=>GEO2FR[n]||n,
+  const tx=D.totaux||{enregistrees:D.officines.length,agreees:D.officines.length};
+  RDC=RDCMap.mount('#map',{summary:'<b>'+tx.enregistrees+'</b> identifiées · <b>'+tx.agreees+'</b> agréées (affichées)',points:pts,geo,provName:n=>GEO2FR[n]||n,
     popup:p=>'<b>'+esc(p.nom)+'</b><br><small>'+esc(RDCMap.CATS[p.cat][0])+' · '+esc(p.entite||p.prov||'')+(p.approx?'<br>position indicative (chef-lieu)':'')+'</small>'+(p.cat==='importateur'?'':'<br>'+itin(DEST[p.id]=Object.assign({},p,{distance:LOC?Math.round(hav(LOC.lat,LOC.lon,p.lat,p.lon)):null}))),
     onMapClick:e=>{if(RDC.map.getZoom()<12)return;const d={id:'pt',nom:'Lieu sélectionné',lat:+e.latlng.lat.toFixed(6),lon:+e.latlng.lng.toFixed(6)};DEST.pt=d;L.popup().setLatLng(e.latlng).setContent('<b>Lieu sélectionné</b><br><small>'+d.lat+', '+d.lon+'</small><br>'+itin(d)).openOn(RDC.map)}});
   MAP=RDC.map;
   const all=$('#hmAll'),here=$('#hmHere');
   if(all)all.onclick=()=>RDC.reset();
-  if(here)here.onclick=()=>{if(LOC)RDC.zoomHere(LOC,HNEAR);else locate()};
+  if(here)here.onclick=()=>{if(!LOC){locate();return}const g=geoDetect(LOC.lat,LOC.lon);RDC.zoomZone(LOC,HNEAR,[g.entite,g.prov||LOC.label].filter(Boolean).join(' · ')||'Votre secteur');document.getElementById('map').scrollIntoView({block:'start',behavior:'smooth'})};
   if(LOC){showNear()}else locate()}
 /* localisation automatique à l'ouverture : les pharmacies les plus proches s'affichent aussitôt */
 function locate(){

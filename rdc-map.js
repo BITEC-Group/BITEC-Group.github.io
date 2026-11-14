@@ -15,7 +15,7 @@
     return P}
   let css=false;
   function addCss(){if(css)return;css=true;const s=document.createElement('style');
-    s.textContent='.rdcLeg{background:#fffffff2;border-radius:10px;padding:4px 7px;font:11px system-ui,sans-serif;box-shadow:0 1px 6px #0003;max-width:200px}.rdcLeg div{display:flex;align-items:center;gap:5px;padding:1px 0;cursor:pointer;user-select:none}.rdcLeg div.off{opacity:.35;text-decoration:line-through}.rdcLeg i{width:11px;height:11px;border-radius:50%;flex:none;border:1px solid #fff;box-shadow:0 0 0 1px #0003}.rdcLeg b{margin-left:auto;padding-left:6px}'+
+    s.textContent='.rdcLeg{background:#fffffff2;border-radius:10px;padding:4px 7px;font:11px system-ui,sans-serif;box-shadow:0 1px 6px #0003;max-width:200px}.rdcLeg div{display:flex;align-items:center;gap:5px;padding:1px 0;cursor:pointer;user-select:none}.rdcLeg div.off{opacity:.35;text-decoration:line-through}.rdcLeg i{width:11px;height:11px;border-radius:50%;flex:none;border:1px solid #fff;box-shadow:0 0 0 1px #0003}.rdcLeg b{margin-left:auto;padding-left:6px}.rdcLeg p.rdcSum{margin:0 0 3px;padding-bottom:3px;border-bottom:1px solid #0002;font-weight:600;cursor:default}.rdcLeg p.rdcSum b{margin:0;padding:0}'+
     '.rdcHi{width:26px;height:26px;border-radius:50%;background:#0E8A45;color:#fff;border:3px solid #fff;box-shadow:0 1px 6px #0006;font:700 13px/20px system-ui,sans-serif;text-align:center}.rdcMe{width:18px;height:18px;border-radius:50%;background:#007FFF;border:3px solid #fff;box-shadow:0 0 0 2px #007FFF66,0 1px 6px #0006}.gtip2{font:12px system-ui,sans-serif}';
     document.head.appendChild(s)}
   function mount(el,o){
@@ -33,7 +33,7 @@
       mk.on('click',()=>{if(o.onPick)o.onPick(p)});mk.addTo(groups[p.cat])});
     const leg=L.control({position:'bottomleft'});
     leg.onAdd=()=>{const d=L.DomUtil.create('div','rdcLeg');L.DomEvent.disableClickPropagation(d);
-      d.innerHTML=Object.keys(CATS).filter(k=>counts[k]>0||k!=='illegale').map(k=>'<div data-k="'+k+'"><i style="background:'+CATS[k][1]+'"></i>'+CATS[k][0]+'<b>'+counts[k]+'</b></div>').join('');
+      d.innerHTML=(o.summary?'<p class="rdcSum">'+o.summary+'</p>':'')+Object.keys(CATS).filter(k=>counts[k]>0||k!=='illegale').map(k=>'<div data-k="'+k+'"><i style="background:'+CATS[k][1]+'"></i>'+CATS[k][0]+'<b>'+counts[k]+'</b></div>').join('');
       d.querySelectorAll('[data-k]').forEach(r=>r.onclick=()=>{const k=r.dataset.k;hid[k]=!hid[k];r.classList.toggle('off',hid[k]);hid[k]?m.removeLayer(groups[k]):groups[k].addTo(m)});return d};
     leg.addTo(m);
     /* fond de rues avec noms, seulement quand on zoome */
@@ -44,15 +44,21 @@
       if(geo)geo.setStyle({fillOpacity:near?0:.8,opacity:near?.5:1})};
     m.on('zoomend',sync);
     if(o.onMapClick)m.on('click',o.onMapClick);
-    let me=null,hi=null,userFit=false;
+    let me=null,hi=null,zone=null,userFit=false;const hav=(a,b,c,d)=>{const t=x=>x*Math.PI/180,k=Math.sin(t(c-a)/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(t(d-b)/2)**2;return 12742000*Math.asin(Math.sqrt(k))};
     const api={map:m,counts,
-      reset(){userFit=false;m.fitBounds(BOUNDS,{padding:[4,4]})},
+      reset(){userFit=false;if(zone){m.removeLayer(zone);zone=null};m.fitBounds(BOUNDS,{padding:[4,4]})},
       setUser(u){if(me){m.removeLayer(me);me=null}if(u)me=L.marker([u.lat,u.lon],{icon:L.divIcon({className:'',html:'<div class="rdcMe"></div>',iconSize:[18,18],iconAnchor:[9,9]}),keyboard:false}).bindTooltip('Vous êtes ici').addTo(m)},
       /* met en évidence les pharmacies les plus proches (numérotées) et cadre la carte sur l'utilisateur et ces pharmacies */
-      showNearest(u,list){if(hi){m.removeLayer(hi);hi=null}api.setUser(u);hi=L.layerGroup().addTo(m);
+      showNearest(u,list,fit){if(hi){m.removeLayer(hi);hi=null}api.setUser(u);hi=L.layerGroup().addTo(m);
         list.forEach((x,i)=>L.marker([x.lat,x.lon],{icon:L.divIcon({className:'',html:'<div class="rdcHi">'+(i+1)+'</div>',iconSize:[26,26],iconAnchor:[13,13]}),zIndexOffset:500})
           .bindPopup(()=>o.popup?o.popup(Object.assign({cat:'pharmacie'},x)):'<b>'+esc(x.nom)+'</b>').addTo(hi));
-        api.zoomHere(u,list)},
+        if(fit!==false)api.zoomHere(u,list)},
+      /* vue détaillée du secteur : périmètre autour de l'utilisateur couvrant les pharmacies les plus proches, avec le fond de rues */
+      zoomZone(u,list,label){userFit=true;if(zone){m.removeLayer(zone);zone=null}
+        const far=Math.max(500,...(list||[]).map(x=>x.distance!=null?x.distance:hav(u.lat,u.lon,x.lat,x.lon))),r=Math.ceil(far/250)*250+150;
+        zone=L.circle([u.lat,u.lon],{radius:r,color:'#007FFF',weight:2,dashArray:'7 6',fillColor:'#007FFF',fillOpacity:.05,interactive:false}).addTo(m);
+        if(label)zone.bindTooltip(label+' · rayon '+(r<1000?r+' m':(r/1000).toFixed(r%1000?2:0)+' km'),{permanent:true,direction:'top',className:'gtip2'});
+        m.fitBounds(zone.getBounds(),{padding:[14,14],maxZoom:17})},
       zoomHere(u,list){userFit=true;const pts=[[u.lat,u.lon]].concat((list||[]).map(x=>[x.lat,x.lon]));
         if(pts.length>1)m.fitBounds(pts,{padding:[30,30],maxZoom:16});else m.setView(pts[0],15)},
       destroy(){m.remove()}};
