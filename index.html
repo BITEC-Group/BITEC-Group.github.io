@@ -112,6 +112,8 @@ a.tile .ico{font-size:30px}a.tile small{color:var(--mute)}a.tile b,a.tile small,
 .maplay2{display:flex;flex-direction:column;gap:14px}
 .sigfilt{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px 22px;align-items:start}.sigfilt h3{grid-column:1/-1;margin:0}.sigfilt label{margin-top:4px}.sigfilt .legend{margin-top:0}
 .gp .kv{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.siglab{background:#fffffff0;border:1px solid #0003;border-radius:6px;padding:1px 5px;font:600 11px system-ui,sans-serif;color:#14231B;box-shadow:none}.siglab:before{display:none}
+.sigbadge{background:#fffffff2;border-radius:8px;padding:4px 9px;font:12px system-ui,sans-serif;box-shadow:0 1px 6px #0003;max-width:260px}
 .gp .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.gp .kv div{background:#F3F8F5;border-radius:8px;padding:6px 8px}.gp .kv b{display:block;font-size:19px}.gp .kv small{color:var(--mute)}
 .leaflet-tooltip.gtip{font:13px system-ui;line-height:1.35}
 </style>
@@ -362,14 +364,16 @@ function geoTip(name,s){return '<b>'+esc(name)+'</b><br>'+s.total+' officines et
 function geoPanel(sel){
   const prov=sel?sel.prov:null,key=sel?sel.key:null,s=geoStats(prov,key);
   const title=sel?(key?key+' ('+prov+')':prov):'République démocratique du Congo';
-  const kv=(b,l,c)=>'<div><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b><small>'+l+'</small></div>';
+  const lk=m=>m&&ROLES[ROLE].m.includes(m)?' class="clk" data-go="'+m+'" tabindex="0" role="button" title="Ouvrir : '+esc(MODS[m][0])+'"':'';
+  const kv=(b,l,c,m)=>'<div'+lk(m)+'><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b><small>'+l+'</small></div>';
+  const head3=(txt,m)=>'<b'+lk(m)+' style="font-size:12px;color:#5B6B62;display:block">'+txt+(lk(m)?' ›':'')+'</b>';
   return '<div class="card gp"><h3>'+esc(title)+'</h3><div class="sub">'+(key?'Ville / entité':sel?'Province':'Vue nationale'+(SCOPE?' (votre périmètre : '+esc(SCOPE)+')':''))+'</div>'+
   '<div class="kv">'+kv(s.total,'Officines et pharmacies identifiées')+kv(s.agrees,'Agréées (carte valide ou à renouveler)')+kv(s.conf+' %','Cartes à jour')+kv(s.dep.length,'Dépôts pharmaceutiques')+kv(s.imp.length,'Importateurs')+kv(s.clandestine,'Non autorisées','#CE1021')+kv(s.cum.length,'Cumuls de rôles','#C98A00')+'</div>'+
   '<b style="font-size:12px;color:#5B6B62">Statut des officines et pharmacies</b>'+bars([['À jour',s.autorisee,stCol.autorisee],['À renouveler',s.renouv,stCol.renouvellement],['Expirées',s.expiree,stCol.expiree],['En attente',s.attente,stCol.en_attente],['Non autorisées',s.clandestine,stCol.clandestine]])+
-  '<div class="kv" style="margin-top:10px">'+kv(s.decl,'Approvisionnements')+kv(s.ecart,'Écarts / non reçus','#C98A00')+kv(s.pv,'PV émis')+kv(usd(s.pvPaye)+' / '+usd(s.pvTot),'Amendes perçues / dues')+(key?'':kv(s.ammOpen,'Dossiers en cours')+kv(s.ammLate,'Dossiers hors délai','#CE1021'))+'</div>'+
-  (s.dep.length?'<b style="font-size:12px;color:#5B6B62">Dépôts pharmaceutiques</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.dep.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.dep.length>6?' …':'')+'</div>':'')+
-  (s.imp.length?'<b style="font-size:12px;color:#5B6B62">Importateurs</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.imp.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.imp.length>6?' … (+'+(s.imp.length-6)+')':'')+'</div>':'')+
-  (s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).length?'<b style="font-size:12px;color:#5B6B62">À régulariser en priorité</b><div style="font-size:12.5px;margin:3px 0 8px">'+s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).map(o=>esc(o.nom)+' <small>('+statLbl[o.statut][0]+')</small>').join('<br>')+'</div>':'')+
+  '<div class="kv" style="margin-top:10px">'+kv(s.decl,'Approvisionnements',null,'supply')+kv(s.ecart,'Écarts / non reçus','#C98A00','supply')+kv(s.pv,'PV émis',null,'insp')+kv(usd(s.pvPaye)+' / '+usd(s.pvTot),'Amendes perçues / dues',null,'insp')+(key?'':kv(s.ammOpen,'Dossiers en cours',null,'titles')+kv(s.ammLate,'Dossiers hors délai','#CE1021','titles'))+'</div>'+
+  (s.dep.length?head3('Dépôts pharmaceutiques','supply')+'<div style="font-size:12.5px;margin:3px 0 8px">'+s.dep.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.dep.length>6?' …':'')+'</div>':'')+
+  (s.imp.length?head3('Importateurs','supply')+'<div style="font-size:12.5px;margin:3px 0 8px">'+s.imp.slice(0,6).map(e=>esc(e.nom)).join(' · ')+(s.imp.length>6?' … (+'+(s.imp.length-6)+')':'')+'</div>':'')+
+  (s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).length?head3('À régulariser en priorité',ROLES[ROLE].m.includes('reg')?'reg':null)+'<div style="font-size:12.5px;margin:3px 0 8px">'+s.O.filter(o=>o.statut==='expiree'||o.statut==='clandestine').slice(0,4).map(o=>(ROLES[ROLE].m.includes('reg')?'<a href="#" data-reg="'+esc(o.nom)+'">'+esc(o.nom)+'</a>':esc(o.nom))+' <small>('+statLbl[o.statut][0]+')</small>').join('<br>')+'</div>':'')+
   '<div class="row noprint" style="margin-top:8px">'+(can('officines','R')?'<button class="sm" id="gpReg">Ouvrir le registre'+(sel?' filtré':'')+'</button>':'')+(sel?'<button class="sm alt" id="gpAll">Vue nationale</button>':'')+'</div></div>'}
 function vMap(v){
   v.innerHTML=head('Carte interactive des officines et pharmacies','Survolez une province ou une ville pour un aperçu ; cliquez pour afficher les statistiques (officines et pharmacies, dépôts, importateurs, dossiers, PV).')+
@@ -385,18 +389,29 @@ function vMap(v){
   '<div class="legend" style="margin-top:8px">'+Object.keys(statLbl).map(k=>'<div><i style="background:'+stCol[k]+'"></i>'+statLbl[k][0]+'</div>').join('')+'<div><i style="background:#fff;border:2px solid #007FFF"></i>Ville / commune</div></div></div>'+
   '</div><div id="gpanel"></div></div>';
   const m=L.map('map').setView([-2.9,23.5],5);window._map=m;
-  epTileLayer().addTo(m);
+  let base=null,detail=null,badge=null;
+  const syncBase=()=>{const on=!!MAPST.sel||m.getZoom()>=11;if(on===detail&&base)return;detail=on;if(base)m.removeLayer(base);base=epTileLayer(on?{labels:true}:undefined);base.addTo(m);if(base.bringToBack)base.bringToBack();
+    if(badge){m.removeControl(badge);badge=null}
+    if(on){badge=L.control({position:'topright'});badge.onAdd=()=>{const d=L.DomUtil.create('div','sigbadge');d.innerHTML='<b>Vue détaillée</b><br>Noms des rues, quartiers, points d’intérêt et limites administratives (© OpenStreetMap). Les établissements sont repérés par leur nom.';return d};badge.addTo(m)}
+    if(typeof geo!=='undefined'&&geo)geo.setStyle(geoStyle)};
   const gP=L.layerGroup(),gV=L.layerGroup(),gO=L.layerGroup(),gC=L.layerGroup();let geo=null;
   const provStats={};PROVS.forEach(p=>provStats[p[0]]=geoStats(p[0]));
   const mx=Math.max(1,...Object.values(provStats).map(s=>s.total));
   const col=n=>n>=mx*.5?'#0A4F29':n>=mx*.15?'#2E9B5E':n>=5?'#8FCFA8':'#DDF1E4';
   const showPanel=()=>{const el=$('#gpanel');el.innerHTML=geoPanel(MAPST.sel);
+    el.querySelectorAll('[data-go]').forEach(e=>{const open=()=>navTo(e.dataset.go);e.onclick=open;e.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();open()}}});
+    el.querySelectorAll('[data-reg]').forEach(a=>a.onclick=ev=>{ev.preventDefault();REGF.q=a.dataset.reg;REGF.st='';REGF.sts=null;REGF.prov='';navTo('reg')});
     const r=$('#gpReg');if(r)r.onclick=()=>{REGF.prov=MAPST.sel?MAPST.sel.prov:'';navTo('reg')};
-    const a=$('#gpAll');if(a)a.onclick=()=>{MAPST.sel=null;$('#fProv').value='';draw();m.setView([-2.9,23.5],5);showPanel()}};
-  const select=(prov,key,latlon)=>{MAPST.sel={prov,key};$('#fProv').value=prov;showPanel();draw();if(latlon)m.setView(latlon,key?13:(prov==='Kinshasa'?11:8))};
+    const a=$('#gpAll');if(a)a.onclick=()=>{MAPST.sel=null;$('#fProv').value='';m.setView([-2.9,23.5],5);syncBase();draw();showPanel()}};
+  const select=(prov,key,latlon)=>{MAPST.sel={prov,key};$('#fProv').value=prov;showPanel();syncBase();draw();
+    const pts=key?DB.officines.filter(o=>o.prov===prov&&(prov==='Kinshasa'?o.entite===key:o.ville===key)).map(o=>[o.lat,o.lon]):[];
+    if(key&&pts.length)m.fitBounds(pts,{padding:[50,50],maxZoom:16,animate:false});
+    else{let b=null;geo.eachLayer(l=>{if(GEO2FR[l.feature.properties.name]===prov)b=l.getBounds()});if(b)m.fitBounds(b,{padding:[24,24],animate:false});else if(latlon)m.setView(latlon,key?14:(prov==='Kinshasa'?11:8),{animate:false})}};
+  const geoStyle=f=>{const fr=GEO2FR[f.properties.name],n=(provStats[fr]||{}).total||0,sel=MAPST.sel&&MAPST.sel.prov===fr;
+    return detail?{color:sel?'#007FFF':'#CE1021',weight:sel?4:1,dashArray:sel?null:'5 5',opacity:sel?.95:.45,fillColor:col(n),fillOpacity:sel?.04:0}:{color:sel?'#007FFF':'#CE1021',weight:sel?3:1.2,fillColor:col(n),fillOpacity:.55}};
   function draw(){
     gP.clearLayers();gV.clearLayers();gO.clearLayers();gC.clearLayers();
-    geo=L.geoJSON(PROV_GEO,{style:f=>{const fr=GEO2FR[f.properties.name],n=(provStats[fr]||{}).total||0,sel=MAPST.sel&&MAPST.sel.prov===fr;return{color:sel?'#007FFF':'#CE1021',weight:sel?3:1.2,fillColor:col(n),fillOpacity:.55}},
+    geo=L.geoJSON(PROV_GEO,{style:geoStyle,
       onEachFeature:(f,l)=>{const fr=GEO2FR[f.properties.name]||f.properties.name,s=provStats[fr]||geoStats(fr);
         l.bindTooltip(geoTip(fr,s),{sticky:true,className:'gtip'});
         l.on({mouseover:e=>{e.target.setStyle({weight:3,fillOpacity:.8});e.target.bringToFront()},mouseout:e=>geo.resetStyle(e.target),click:()=>{const p=PROVS.find(x=>x[0]===fr);select(fr,null,p?[p[3],p[4]]:null)}})}}).addTo(gP);
@@ -406,17 +421,23 @@ function vMap(v){
       const c=L.circleMarker(ll,{radius:5+Math.sqrt(g.n)*2.2,color:'#007FFF',weight:2,fillColor:'#fff',fillOpacity:.85});
       c.bindTooltip(geoTip(g.key+' ('+g.prov+')',s),{className:'gtip'});c.on('click',()=>select(g.prov,g.key,ll));gV.addLayer(c)});
     const list=DB.officines.filter(o=>(!MAPST.sel||o.prov===MAPST.sel.prov)&&(!MAPST.sel||!MAPST.sel.key||(o.prov==='Kinshasa'?o.entite===MAPST.sel.key:o.ville===MAPST.sel.key))&&(!MAPST.st||o.statut===MAPST.st));
-    list.forEach(o=>{const mk=L.circleMarker([o.lat,o.lon],{radius:6,color:'#fff',weight:1.5,fillColor:stCol[o.statut],fillOpacity:1});
-      mk.bindTooltip(esc(o.nom)+' — '+statLbl[o.statut][0]);
-      mk.bindPopup('<b>'+esc(o.nom)+'</b><br>'+esc(o.id)+' · '+esc(o.prov)+' / '+esc(o.entite)+'<br>'+esc(o.pharmacien)+'<br>Statut : <b>'+statLbl[o.statut][0]+'</b><br>Carte : '+(o.carte?esc(o.carte)+' (exp. '+o.expiration+')':'—')+'<br>Dernière visite : '+o.visite);gO.addLayer(mk)});
+    list.forEach(o=>{const typ=/^officine/i.test(o.nom)?'Officine':'Pharmacie',mk=L.circleMarker([o.lat,o.lon],{radius:detail?8:6,color:'#fff',weight:detail?2:1.5,fillColor:stCol[o.statut],fillOpacity:1});
+      mk._nm=o.nom;mk._tip=esc(o.nom)+' — '+statLbl[o.statut][0];mk.bindTooltip(mk._tip);
+      mk.bindPopup('<b>'+esc(o.nom)+'</b> <small>('+typ+')</small><br>'+esc(o.id)+' · '+esc(o.prov)+' / '+esc(o.entite)+'<br>'+esc(o.pharmacien)+'<br>Statut : <b>'+statLbl[o.statut][0]+'</b><br>Carte : '+(o.carte?esc(o.carte)+' (exp. '+o.expiration+')':'—')+'<br>Dernière visite : '+o.visite);gO.addLayer(mk)});
+    if(MAPST.sel&&MAPST.sel.key&&list.length){const cl=list.reduce((a,o)=>[a[0]+o.lat/list.length,a[1]+o.lon/list.length],[0,0]),rr=Math.max(400,...list.map(o=>map_d(cl,o)))+250;
+      L.circle(cl,{radius:rr,color:'#007FFF',weight:2.5,dashArray:'8 6',fillColor:'#007FFF',fillOpacity:.05,interactive:false}).bindTooltip(esc(MAPST.sel.key),{permanent:true,direction:'top',className:'siglab'}).addTo(gV)}
     conflicts().filter(c=>!MAPST.sel||c[0].prov===MAPST.sel.prov).forEach(c=>{[c[0],c[1]].forEach(o=>L.circle([o.lat,o.lon],{radius:SETTINGS.minDist/2,color:'#CE1021',weight:1.5,dashArray:'4 4',fill:false}).addTo(gC));
       L.polyline([[c[0].lat,c[0].lon],[c[1].lat,c[1].lon]],{color:'#CE1021',weight:2}).bindTooltip(Math.round(c[2])+' m — '+esc(c[0].nom)+' / '+esc(c[1].nom)).addTo(gC)});
     [[gP,'prov'],[gV,'city'],[gO,'off'],[gC,'conf']].forEach(([g,k])=>{if(MAPST.layers[k]){if(!m.hasLayer(g))g.addTo(m)}else m.removeLayer(g)});
-    gV.eachLayer(l=>l.bringToFront&&l.bringToFront());gO.eachLayer(l=>l.bringToFront&&l.bringToFront())}
-  draw();showPanel();
+    gV.eachLayer(l=>l.bringToFront&&l.bringToFront());gO.eachLayer(l=>l.bringToFront&&l.bringToFront());labels()}
+  const map_d=(a,o)=>{const t=x=>x*Math.PI/180,k=Math.sin(t(o.lat-a[0])/2)**2+Math.cos(t(a[0]))*Math.cos(t(o.lat))*Math.sin(t(o.lon-a[1])/2)**2;return 12742000*Math.asin(Math.sqrt(k))};
+  const labels=()=>{const on=!!detail&&m.getZoom()>=14;gO.eachLayer(mk=>{if(!mk._nm)return;if(on&&!mk._lab){mk.unbindTooltip();mk.bindTooltip(esc(mk._nm),{permanent:true,direction:'top',offset:[0,-8],className:'siglab'});mk._lab=1}else if(!on&&mk._lab){mk.unbindTooltip();mk.bindTooltip(mk._tip);mk._lab=0}})};
+  m.on('zoomend',()=>{const b0=detail;syncBase();if(detail!==b0)draw();labels()});
+  const drawBase=draw;
+  syncBase();draw();showPanel();labels();
   $('#lyP').onchange=e=>{MAPST.layers.prov=e.target.checked;draw()};$('#lyV').onchange=e=>{MAPST.layers.city=e.target.checked;draw()};$('#lyO').onchange=e=>{MAPST.layers.off=e.target.checked;draw()};$('#lyC').onchange=e=>{MAPST.layers.conf=e.target.checked;draw()};
   $('#fProv').value=MAPST.sel?MAPST.sel.prov:'';$('#fSt').value=MAPST.st;
-  $('#fProv').onchange=e=>{const p=PROVS.find(x=>x[0]===e.target.value);if(p)select(p[0],null,[p[3],p[4]]);else{MAPST.sel=null;draw();showPanel();m.setView([-2.9,23.5],5)}};
+  $('#fProv').onchange=e=>{const p=PROVS.find(x=>x[0]===e.target.value);if(p)select(p[0],null,[p[3],p[4]]);else{MAPST.sel=null;m.setView([-2.9,23.5],5);syncBase();draw();showPanel()}};
   $('#fSt').onchange=e=>{MAPST.st=e.target.value;draw()};
   $('#fDist').onchange=e=>{SETTINGS.minDist=Math.max(50,+e.target.value||500);draw()};
   let meMk=null;

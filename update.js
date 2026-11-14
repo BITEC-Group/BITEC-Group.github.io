@@ -3,7 +3,7 @@
    (/api/public/version) et le service worker à sa dernière version. Dès qu'une nouvelle version existe : message + bouton « Mettre à jour »
    (vide les caches et recharge). Fonctionne sur tous les appareils, avec ou sans service worker. */
 (function(){
-  const CUR='0.7.20';
+  const CUR='0.7.21';
   const num=v=>String(v||'0').split('+')[0].split('.').map(x=>parseInt(x,10)||0);
   const newer=(a,b)=>{const x=num(a),y=num(b);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false};
   let banner=null,latest=null,dismissed=null,reloading=false;
