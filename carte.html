@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 :root{--green:#0E6B38;--green-d:#0A4F29;--blue:#007FFF;--yellow:#F7D618;--red:#CE1021;--bg:#F3F6F4;--ink:#14231B;--mute:#5B6B62;--line:#DCE4DF}
-*{box-sizing:border-box}html,body{height:100%}
+*{box-sizing:border-box}html,body{min-height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
 .flag{height:6px;flex:none;background:linear-gradient(90deg,var(--blue) 0 60%,var(--yellow) 60% 80%,var(--red) 80%)}
 header{flex:none;background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -16,9 +16,10 @@ header h1{margin:0;font-size:18px}header small{display:block;opacity:.85;font-we
 header .sp{flex:1}
 header a{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 10px;font-size:13.5px}
 .demo{flex:none;background:#FFF3C4;color:#5A4500;font-size:12px;text-align:center;padding:3px 8px}
-.wrap{flex:1;min-height:0;display:flex}
-#map{flex:1;min-width:0}
-aside{width:360px;max-width:42%;overflow:auto;background:#fff;border-left:1px solid var(--line);padding:14px}
+.wrap{flex:none;display:block}
+#map{height:62vh;min-height:360px}
+aside{width:100%;background:#fff;border-top:1px solid var(--line);padding:14px}
+aside .kv{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
 .kv div{background:#F3F8F5;border-radius:10px;padding:6px 10px}.kv b{display:block;font-size:20px}.kv small{color:var(--mute)}
 h2{margin:0 0 2px;font-size:18px}.sub{color:var(--mute);font-size:13px}
@@ -30,7 +31,7 @@ button.alt{background:#fff;color:var(--green);border:1px solid var(--green)}
 .gtip{font:13px system-ui;line-height:1.35}
 .legend{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mute);margin:6px 0}
 .legend i{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#DDF1E4,#0A4F29)}
-@media(max-width:820px){.wrap{flex-direction:column}#map{flex:none;height:55vh}aside{width:100%;max-width:none;border-left:0;border-top:1px solid var(--line);flex:1}}
+@media(max-width:820px){#map{height:55vh}}
 </style>
 </head>
 <body>

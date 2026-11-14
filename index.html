@@ -109,8 +109,9 @@ label{display:block;font-size:12px;color:var(--mute);margin:8px 0 3px}
 a.tile{text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--rdc-blue);transition:transform .1s,box-shadow .1s}
 a.tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
 a.tile .ico{font-size:30px}a.tile small{color:var(--mute)}a.tile b,a.tile small,.kpi .l{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
-.maplay2{display:grid;grid-template-columns:230px 1fr 340px;gap:14px}
-@media(max-width:1180px){.maplay2{grid-template-columns:1fr}}
+.maplay2{display:flex;flex-direction:column;gap:14px}
+.sigfilt{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px 22px;align-items:start}.sigfilt h3{grid-column:1/-1;margin:0}.sigfilt label{margin-top:4px}.sigfilt .legend{margin-top:0}
+.gp .kv{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 .gp .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.gp .kv div{background:#F3F8F5;border-radius:8px;padding:6px 8px}.gp .kv b{display:block;font-size:19px}.gp .kv small{color:var(--mute)}
 .leaflet-tooltip.gtip{font:13px system-ui;line-height:1.35}
 </style>
@@ -372,13 +373,17 @@ function geoPanel(sel){
   '<div class="row noprint" style="margin-top:8px">'+(can('officines','R')?'<button class="sm" id="gpReg">Ouvrir le registre'+(sel?' filtré':'')+'</button>':'')+(sel?'<button class="sm alt" id="gpAll">Vue nationale</button>':'')+'</div></div>'}
 function vMap(v){
   v.innerHTML=head('Carte interactive des officines et pharmacies','Survolez une province ou une ville pour un aperçu ; cliquez pour afficher les statistiques (officines et pharmacies, dépôts, importateurs, dossiers, PV).')+
-  '<div class="maplay2"><div class="card"><h3>Couches & filtres</h3>'+
+  '<div class="maplay2"><div><div id="map" style="height:min(72vh,640px);min-height:380px"></div></div><div class="card sigfilt"><h3>Couches & filtres</h3>'+
+  '<div>'+
   '<label><input type="checkbox" id="lyP" '+(MAPST.layers.prov?'checked':'')+'> Provinces (densité)</label><label><input type="checkbox" id="lyV" '+(MAPST.layers.city?'checked':'')+'> Villes / communes</label><label><input type="checkbox" id="lyO" '+(MAPST.layers.off?'checked':'')+'> Officines et pharmacies</label><label><input type="checkbox" id="lyC" '+(MAPST.layers.conf?'checked':'')+'> Conflits de distance</label>'+
+  '</div><div>'+
   '<label>Province</label><select id="fProv" style="width:100%"><option value="">Toutes</option>'+PROVS.map(p=>'<option>'+p[0]+'</option>').join('')+'</select>'+
   '<label>Statut</label><select id="fSt" style="width:100%"><option value="">Tous</option>'+Object.keys(statLbl).map(k=>'<option value="'+k+'">'+statLbl[k][0]+'</option>').join('')+'</select>'+
+  '</div><div>'+
   '<button id="myLoc" class="alt" style="width:100%;margin:8px 0 2px">📍 Ma position</button><div class="note" id="myLocMsg" style="display:none"></div><label>Distance minimale légale (m)</label><input type="number" id="fDist" value="'+SETTINGS.minDist+'" style="width:100%"><div class="note">Seuil paramétrable, à valider juridiquement.</div>'+
+  '</div><div>'+
   '<div class="legend" style="margin-top:8px">'+Object.keys(statLbl).map(k=>'<div><i style="background:'+stCol[k]+'"></i>'+statLbl[k][0]+'</div>').join('')+'<div><i style="background:#fff;border:2px solid #007FFF"></i>Ville / commune</div></div></div>'+
-  '<div><div id="map" style="height:620px"></div></div><div id="gpanel"></div></div>';
+  '</div><div id="gpanel"></div></div>';
   const m=L.map('map').setView([-2.9,23.5],5);window._map=m;
   epTileLayer().addTo(m);
   const gP=L.layerGroup(),gV=L.layerGroup(),gO=L.layerGroup(),gC=L.layerGroup();let geo=null;
